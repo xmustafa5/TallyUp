@@ -221,6 +221,14 @@ open http://localhost:3000/documentation
 - **Prisma nested creates**: Use relation names, not FK columns (`department: { connect: { id } }` NOT `departmentId: id`)
 - **Prisma schema sync in Docker**: After changing `schema.prisma`, run `docker compose restart app` (startup script auto-pushes schema)
 
+## Development Tracking
+
+- `DEVELOPMENT-PLAN.md` -- Full phased roadmap (7 phases) with architecture decisions and file paths
+- `PROGRESS-TRACKER.md` -- Task completion tracker, mark `- [x]` as tasks are done
+- `qadha_prd.md` -- Product requirements document (features, decisions, user personas)
+
+When starting a new phase or task, check `PROGRESS-TRACKER.md` for current status. After completing any task, immediately mark it as done in the tracker.
+
 ## Detailed Rules (auto-loaded by path)
 
 Architecture details, patterns, and conventions are in `.claude/rules/`:
