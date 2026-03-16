@@ -1,0 +1,29 @@
+# Build output
+dist
+tmp
+
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.template
+
+# IDE
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Testing
+coverage
+test-output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Prisma
+prisma/*.db

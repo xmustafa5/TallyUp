@@ -1,0 +1,71 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: fastify-template
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:password@db:5432/fastify_template_db
+      - REDIS_URL=redis://redis:6379
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./package.json
+    networks:
+      - fastify-template-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: fastify-template-db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fastify_template_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fastify-template-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastify-template-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    networks:
+      - fastify-template-network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  fastify-template-network:
+    driver: bridge
