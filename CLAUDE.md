@@ -1,7 +1,9 @@
-# Fastify Template
+# Qatha
 
-**Single Fastify service** with DDD + Hexagonal Architecture.
-Tech Stack: Fastify 5 | TypeScript | Prisma | PostgreSQL | BullMQ | Redis | Docker | pnpm
+Monorepo with Fastify backend + Next.js frontend.
+
+**Backend:** Fastify 5 | TypeScript | Prisma | PostgreSQL | BullMQ | Redis | Docker | pnpm
+**Frontend:** Next.js 16 | React 19 | TypeScript | Tailwind CSS | shadcn/ui | pnpm
 
 ## Core Principles
 
@@ -31,13 +33,61 @@ Before writing ANY implementation code using a library, plugin, or framework:
 2. Call `query-docs` with your specific use case
 3. Use the returned docs/examples as the basis for implementation
 
-This applies to: Fastify plugins, Prisma, BullMQ, TypeBox, ioredis, any npm package.
+This applies to: Fastify plugins, Prisma, BullMQ, TypeBox, ioredis, Next.js, TanStack Query, shadcn/ui, any npm package.
 
 ### Package Installation
 
 **NEVER manually edit package.json.** Use `pnpm add <package>` commands only.
 
-## Development Workflow
+## Commands
+
+### Backend (from `backend/`)
+
+```bash
+pnpm install          # Install dependencies
+pnpm dev              # Start dev server
+pnpm build            # Build
+pnpm test             # Run tests
+pnpm lint             # Run ESLint
+pnpm db:generate      # Generate Prisma client
+pnpm db:push          # Push schema to DB
+pnpm db:migrate:dev   # Create migration
+pnpm db:studio        # Open Prisma Studio
+```
+
+### Frontend (from `frontend/`)
+
+```bash
+pnpm install          # Install dependencies
+pnpm dev              # Start Next.js dev server (localhost:3000)
+pnpm build            # Build frontend
+pnpm lint             # Run ESLint
+```
+
+### Docker
+
+```bash
+docker compose up -d          # Start all services
+docker compose up -d --build  # Rebuild and start
+docker compose logs -f app    # Follow app logs
+docker compose down           # Stop all services
+docker compose restart app    # Restart after Prisma schema changes
+```
+
+## Port Mapping
+
+| Port | Service    |
+| ---- | ---------- |
+| 3000 | Backend API |
+| 3001 | Frontend   |
+| 5432 | PostgreSQL |
+| 6379 | Redis      |
+
+## Architecture
+
+### Backend (backend/src/) - DDD + Hexagonal
+
+Development workflow:
 
 1. **Research & Documentation (MANDATORY)** -- Query Context7 MCP for every library/plugin. Study existing codebase patterns.
 2. **Design Schema** -- Write/update Prisma models, plan migrations and relationships
@@ -47,15 +97,72 @@ This applies to: Fastify plugins, Prisma, BullMQ, TypeBox, ioredis, any npm pack
 6. **Test** -- `pnpm test`, then curl endpoints manually
 7. **Docker** -- `docker compose restart app` after Prisma schema changes
 
-## Port Mapping
+### Frontend (frontend/src/) - Next.js App Router Pages
 
-| Port | Service         |
-| ---- | --------------- |
-| 3000 | Fastify Template API |
-| 5432 | PostgreSQL      |
-| 6379 | Redis           |
+```
+src/
+├── app/                               # App Router (file-based routing)
+│   ├── layout.tsx                     # Root layout
+│   ├── page.tsx                       # Home page
+│   ├── (auth)/                        # Auth route group
+│   │   ├── login/page.tsx
+│   │   └── register/page.tsx
+│   └── (dashboard)/                   # Dashboard route group
+│       ├── layout.tsx                 # Dashboard layout (sidebar, nav)
+│       └── {page}/                    # e.g., people/, attendance/, payroll/
+│           ├── page.tsx               # Page component
+│           ├── loading.tsx            # Loading UI
+│           ├── error.tsx              # Error boundary
+│           └── [id]/page.tsx          # Dynamic route (detail view)
+├── components/                        # ALL UI components
+│   ├── ui/                            # shadcn/ui components
+│   ├── layout/                        # Layout components (sidebar, nav)
+│   └── shared/                        # Custom shared (data-table, filter-bar, page-header)
+├── services/                          # API call functions per domain
+│   └── {domain}.ts                    # e.g., people.ts, attendance.ts
+├── hooks/                             # Custom hooks (TanStack Query wrappers, utilities)
+├── types/                             # TypeScript types per domain
+├── stores/                            # Global state management (Zustand)
+├── contexts/                          # React contexts
+├── i18n/                              # Internationalization config
+├── constants/                         # Query keys & shared constants
+└── lib/                               # Shared libraries & config
+    ├── axios.ts                       # Axios instance config
+    └── utils.ts                       # Utility functions
+```
 
-## Testing (CURL First)
+**Frontend architecture rules:**
+
+- `src/components/` = ALL reusable components (shadcn/ui, layouts, shared)
+- `src/app/` = ONLY routing and page components (no business logic)
+- `services/` = raw axios API calls, `hooks/` = TanStack Query hooks that import from services
+- Pages are thin wrappers that compose components and hooks
+- Use route groups `(groupName)/` for shared layouts without affecting URL
+
+## Frontend Libraries
+
+| Library                   | Purpose                                         |
+| ------------------------- | ----------------------------------------------- |
+| **@tanstack/react-query** | ALL server state (fetching, caching, mutations) |
+| **axios**                 | ALL HTTP API calls                              |
+| **shadcn/ui**             | ALL UI components                               |
+| **react-hook-form**       | ALL form handling                               |
+| **zod**                   | ALL data validation                             |
+| **Zustand**               | Global client state (when needed)               |
+| **next-intl**             | Internationalization                            |
+
+## API & Integration Rules
+
+- When implementing any API endpoint, mark it as `- [x]` in `API-DOCS.md`
+- When you find a mismatch between UI types and API responses, log it in `API-UI-CONFLICTS.md`
+- Backend enforces `limit <= 100` on all paginated endpoints -- never use `limit: 200`
+- When the API returns only raw IDs but the UI needs a human-readable name, do NOT fetch the related entity separately. Add it to `BACKEND-FIXES.md` as a backend fix (API should JOIN and return the resolved name). Only implement a frontend workaround if the user explicitly asks.
+- Conflict statuses: `PENDING` | `NEEDS VERIFY` | `OK (safe fallback)`
+- Backend team notifications in `API-UI-CONFLICTS.md` must be copy-paste-ready with: Endpoint, Current behavior, Expected behavior, Example response, Why needed, Priority
+
+## Testing
+
+### Backend
 
 ```bash
 # Liveness
@@ -68,7 +175,43 @@ curl -s http://localhost:3000/health/ready | jq .
 open http://localhost:3000/documentation
 ```
 
-## Common Pitfalls
+### Frontend
+
+- **ALWAYS use `curl`** for API testing -- never write Python/Node test scripts
+
+## Frontend Code Patterns
+
+### Data Fetching
+
+- `services/` = raw axios calls (no TanStack Query)
+- `hooks/` = TanStack Query hooks wrapping service methods
+- `constants/query-keys.ts` = query key factory: `all`, `list(filters?)`, `detail(id)`
+- Always import axios instance from `@/lib/axios`
+
+### Critical UI Rules
+
+1. **NEVER conditionally render Lucide icons** (e.g., `{isPending && <Loader2 />}`). Always render and toggle with CSS: `<Loader2 className={`mr-2 size-4 animate-spin ${isPending ? '' : 'hidden'}`} />`. Conditional rendering of SVG icons inside buttons causes React DOM `insertBefore` errors.
+2. **ALWAYS use Zod + react-hook-form** for all forms
+3. **ALWAYS reset forms** when dialogs open
+4. **ALWAYS close dialogs** on successful mutations
+5. **ALWAYS invalidate queries** after mutations
+6. Dialogs go in `components/` folder as separate files: `{entity}-{action}-dialog.tsx`
+7. Main page = default export, dialogs = named exports
+8. Use axios for HTTP -- NOT fetch
+
+### Global Hooks
+
+- `useDebouncedValue(value, delay?)` -- ALWAYS use for search debouncing. Never manual `useEffect` + `setTimeout`.
+
+## Code Style
+
+- TypeScript strict mode, ES2022 target, 2-space indentation
+- Functional components only, named exports
+- File naming: components `kebab-case.tsx`, hooks `use-{name}.ts`, types `index.ts`
+- Props interface: `{Component}Props` above component
+- Always use `pnpm` (not npm/yarn). Never manually edit package.json.
+
+## Backend Common Pitfalls
 
 - **ESM with bundler resolution**: Do NOT add `.js` extensions to imports
 - **Anonymous Docker volumes cache stale `node_modules`**: Use `-V` flag after adding packages (`docker compose up -d -V`)

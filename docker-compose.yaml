@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile.dev
     container_name: fastify-template
     ports:
@@ -19,17 +19,17 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ./src:/app/src
-      - ./prisma:/app/prisma
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
     develop:
       watch:
         - action: sync
-          path: ./src
+          path: ./backend/src
           target: /app/src
           ignore:
             - node_modules/
         - action: rebuild
-          path: ./package.json
+          path: ./backend/package.json
     networks:
       - fastify-template-network
 

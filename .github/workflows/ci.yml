@@ -9,6 +9,9 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -18,12 +21,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
 
   typecheck:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -33,12 +40,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm typecheck
 
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     services:
       postgres:
         image: postgres:16-alpine
@@ -70,6 +81,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm db:push
@@ -77,6 +89,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     needs: [lint, typecheck, test]
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +102,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm build
