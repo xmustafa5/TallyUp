@@ -128,6 +128,14 @@ All errors follow a consistent format:
           name: 'Gap Periods',
           description: 'Gap period management and prayer calculation endpoints',
         },
+        {
+          name: 'Makeup',
+          description: 'Makeup prayer logging, history, and statistics endpoints',
+        },
+        {
+          name: 'Daily Tracker',
+          description: 'Daily prayer tracking, finalization, and streak endpoints',
+        },
       ],
       components: {
         schemas: {

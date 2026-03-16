@@ -87,26 +87,34 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 3A: Makeup + Daily Tracker (Backend)
 
-- [ ] Create MakeupLog entity
-- [ ] Create makeup.service.ts (log, undo, stats)
-- [ ] Create MakeupLogRepository interface + Prisma implementation
-- [ ] Create makeup routes (POST, DELETE, GET history, GET stats)
-- [ ] Create DailyTracker entity
-- [ ] Create daily-tracker.service.ts (getOrCreateToday, markPrayer, finalizeDay)
-- [ ] Create DailyTrackerRepository interface + Prisma implementation
-- [ ] Create daily tracker routes (GET today, GET :date, PATCH :date, POST finalize)
-- [ ] Create BullMQ daily finalization job
-- [ ] Create TypeBox schemas + Swagger docs for both domains
-- [ ] Write makeup service tests
-- [ ] Write daily tracker tests (finalization logic)
-- [ ] Write finalization job tests
+- [x] Create MakeupLog entity with fromPrisma(), toResponse()
+- [x] Create makeup.service.ts (logMakeupPrayer, getStats)
+- [x] Create MakeupLogRepository interface + Prisma implementation
+- [x] Create makeup routes (POST /, DELETE /:id, GET /history, GET /stats)
+- [x] Create makeup TypeBox schemas + Swagger docs
+- [x] Add "Makeup" Swagger tag
+- [x] Write makeup tests (15 tests: entity, service)
+- [x] Create DailyTracker entity with getMissedPrayers(), getCompletedCount()
+- [x] Create daily-tracker.service.ts (getTodayUTC, determineMissedPrayers, shouldUpdateStreak)
+- [x] Create finalization.service.ts (finalizeTracker with MakeupLog creation + balance recalc)
+- [x] Create DailyTrackerRepository interface + Prisma implementation
+- [x] Create daily tracker routes (GET /today, GET /:date, PATCH /:date, POST /:date/finalize, GET /week, GET /streak)
+- [x] Create daily tracker TypeBox schemas + Swagger docs
+- [x] Add "Daily Tracker" Swagger tag
+- [x] Create BullMQ daily finalization job (midnight UTC cron)
+- [x] Write daily tracker tests (23 tests: entity, service, streak logic)
 
 ### 3B: Makeup Todo + Daily Tracker UI (Frontend)
 
-- [ ] Build daily tracker page (5 prayer cards, toggle, summary)
-- [ ] Build makeup todo page (filter, counters, quick-log, history, undo)
-- [ ] Create prayer-card, prayer-type-badge, prayer-counter components
-- [ ] Create use-daily-tracker and use-makeup hooks
+- [x] Create makeup API service + TypeScript interfaces
+- [x] Create daily-tracker API service + TypeScript interfaces
+- [x] Create use-makeup React Query hooks (history, log, undo, stats)
+- [x] Create use-daily-tracker React Query hooks (today, date, mark, finalize, week, streak)
+- [x] Build daily tracker page (5 prayer cards, weekly view, streak display, finalize button)
+- [x] Build makeup page (per-type stats with progress bars, quick-log buttons, history with undo)
+- [x] Create prayer-card component (toggleable with loading state)
+- [x] Create streak-display component
+- [x] Update dashboard with Daily Tracker and Makeup quick links
 
 ---
 

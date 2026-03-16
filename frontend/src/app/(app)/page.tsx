@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, Calculator, LogOut } from 'lucide-react';
+import { Calendar, Calculator, CheckSquare, LogOut, RotateCcw } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { PrayerBalanceSection } from '@/components/gap-periods/prayer-balance';
@@ -27,7 +27,7 @@ export default function DashboardPage() {
 
       <PrayerBalanceSection />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         <Link href="/gap-periods" className="block">
           <div className="rounded-lg border bg-card p-6 transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-3">
@@ -54,6 +54,38 @@ export default function DashboardPage() {
                 <h3 className="font-medium">Calculator</h3>
                 <p className="text-sm text-muted-foreground">
                   View calculation summary and balance
+                </p>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/daily-tracker" className="block">
+          <div className="rounded-lg border bg-card p-6 transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <CheckSquare className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium">Daily Tracker</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track today&apos;s prayers
+                </p>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/makeup" className="block">
+          <div className="rounded-lg border bg-card p-6 transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <RotateCcw className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium">Makeup Prayers</h3>
+                <p className="text-sm text-muted-foreground">
+                  Log completed makeup prayers
                 </p>
               </div>
             </div>
