@@ -136,6 +136,10 @@ All errors follow a consistent format:
           name: 'Daily Tracker',
           description: 'Daily prayer tracking, finalization, and streak endpoints',
         },
+        {
+          name: 'Progress',
+          description: 'Dashboard, calendar, and streak endpoints',
+        },
       ],
       components: {
         schemas: {

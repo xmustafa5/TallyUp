@@ -122,21 +122,24 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 4A: Progress Domain (Backend)
 
-- [ ] Create progress.service.ts (getDashboard, updateStreak)
-- [ ] Create progress routes (dashboard, calendar/:year/:month, streaks)
-- [ ] Create TypeBox schemas + Swagger docs
-- [ ] Integrate streak update with makeup logging
-- [ ] Write progress service tests (aggregation, streak edge cases)
+- [x] Create progress.service.ts (calculateDashboard, calculateCalendarMonth, getMilestone)
+- [x] Create progress routes (GET /progress, GET /progress/calendar/:year/:month, GET /progress/streaks)
+- [x] Create TypeBox schemas + Swagger docs
+- [x] Add "Progress" Swagger tag
+- [x] Write progress service tests (24 tests: dashboard aggregation, calendar month, milestones)
 
 ### 4B: Dashboard + Calendar UI (Frontend)
 
-- [ ] Build dashboard page (counter, progress circle, streak, today status, quick actions)
-- [ ] Build calendar page (monthly grid, color-coded days, day detail modal)
-- [ ] Build app shell layout (bottom nav mobile, sidebar desktop)
-- [ ] Create progress-circle, streak-display, milestone-toast components
-- [ ] Create calendar-grid, day-cell, day-detail-modal components
-- [ ] Create use-dashboard and use-calendar hooks
-- [ ] Add motivational milestone messages
+- [x] Create progress API service + TypeScript interfaces
+- [x] Create use-progress React Query hooks (useDashboard, useCalendarMonth, useStreaks)
+- [x] Build dashboard page (progress circle, stats, today status, streak, milestone banner, quick actions)
+- [x] Build calendar page (monthly grid, navigation, color-coded days, day detail modal)
+- [x] Build app shell layout (mobile bottom nav + desktop sidebar, 5 nav items)
+- [x] Create progress-circle component (SVG circular indicator)
+- [x] Create today-status component (inline 5-prayer row)
+- [x] Create milestone-banner component
+- [x] Create calendar-grid and day-detail-modal components
+- [x] Add motivational milestone messages (10/25/50/75/90/100%)
 
 ---
 
