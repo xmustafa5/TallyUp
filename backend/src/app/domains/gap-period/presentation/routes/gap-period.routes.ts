@@ -15,9 +15,12 @@ import {
   calculateSchema,
   getBalanceSchema,
 } from '../schemas/gap-period.schemas';
+import { CacheService } from '../../../../common/services/cache.service';
+import { CACHE_KEYS, CACHE_TTL } from '../../../../common/constants/cache-keys';
 
 export default async function gapPeriodRoutes(fastify: FastifyInstance) {
   const repository = new PrismaGapPeriodRepository(fastify.prisma);
+  const cache = new CacheService(fastify.redis);
 
   // All gap period routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
@@ -114,6 +117,13 @@ export default async function gapPeriodRoutes(fastify: FastifyInstance) {
 
     await recalculateBalance(fastify.prisma, userId);
 
+    // Invalidate caches after mutation
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+    );
+    await cache.invalidate(`calendar:${userId}:*`);
+
     return reply.code(201).send({
       success: true,
       data: gapPeriod.toResponse(),
@@ -173,6 +183,13 @@ export default async function gapPeriodRoutes(fastify: FastifyInstance) {
 
     await recalculateBalance(fastify.prisma, userId);
 
+    // Invalidate caches after mutation
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+    );
+    await cache.invalidate(`calendar:${userId}:*`);
+
     return reply.send({
       success: true,
       data: updated.toResponse(),
@@ -194,6 +211,13 @@ export default async function gapPeriodRoutes(fastify: FastifyInstance) {
 
     await repository.delete(id);
     await recalculateBalance(fastify.prisma, userId);
+
+    // Invalidate caches after mutation
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+    );
+    await cache.invalidate(`calendar:${userId}:*`);
 
     return reply.send({
       success: true,
@@ -256,31 +280,43 @@ export default async function gapPeriodRoutes(fastify: FastifyInstance) {
   fastify.get('/balance', { schema: getBalanceSchema }, async (request, reply) => {
     const { id: userId } = request.user as { id: string };
 
+    // Try cache first
+    const cacheKey = CACHE_KEYS.balance(userId);
+    const cached = await cache.get<Record<string, unknown>>(cacheKey);
+    if (cached) {
+      return reply.send({ success: true, data: cached });
+    }
+
     const balance = await fastify.prisma.prayerBalance.findUnique({
       where: { userId },
     });
 
+    const responseData = balance
+      ? {
+          fajr: balance.fajr,
+          dhuhr: balance.dhuhr,
+          asr: balance.asr,
+          maghrib: balance.maghrib,
+          isha: balance.isha,
+          totalRemaining: balance.totalRemaining,
+          totalCompleted: balance.totalCompleted,
+        }
+      : {
+          fajr: 0,
+          dhuhr: 0,
+          asr: 0,
+          maghrib: 0,
+          isha: 0,
+          totalRemaining: 0,
+          totalCompleted: 0,
+        };
+
+    // Cache the result
+    await cache.set(cacheKey, responseData, CACHE_TTL.balance);
+
     return reply.send({
       success: true,
-      data: balance
-        ? {
-            fajr: balance.fajr,
-            dhuhr: balance.dhuhr,
-            asr: balance.asr,
-            maghrib: balance.maghrib,
-            isha: balance.isha,
-            totalRemaining: balance.totalRemaining,
-            totalCompleted: balance.totalCompleted,
-          }
-        : {
-            fajr: 0,
-            dhuhr: 0,
-            asr: 0,
-            maghrib: 0,
-            isha: 0,
-            totalRemaining: 0,
-            totalCompleted: 0,
-          },
+      data: responseData,
     });
   });
 }

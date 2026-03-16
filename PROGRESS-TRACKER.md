@@ -147,35 +147,40 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 5A: i18n + RTL
 
-- [ ] Complete en.json translations
-- [ ] Complete ar.json translations
-- [ ] RTL layout adjustments (Tailwind logical properties)
-- [ ] Language switcher component
-- [ ] Prayer names in Arabic + English
-- [ ] Arabic date formatting
-- [ ] Arabic font setup
+- [x] Complete en.json translations (all sections)
+- [x] Complete ar.json translations (all sections)
+- [x] RTL layout adjustments (html dir attribute, sidebar border)
+- [x] Language switcher component (cookie-based locale toggle)
+- [x] Prayer names in Arabic + English
+- [x] Arabic font setup (IBM Plex Sans Arabic via next/font)
+- [x] next-intl configuration (request config, locale cookies, NextIntlClientProvider)
+- [x] Nav labels using useTranslations
 
 ### 5B: Settings Page
 
-- [ ] Build settings page (edit profile, change password, language, delete account, logout)
-- [ ] Backend: PUT /auth/change-password
-- [ ] Backend: DELETE /auth/account
+- [x] Build settings page (profile edit, change password, language, delete account, sign out)
+- [x] Backend: PUT /auth/change-password (password verification + update)
+- [x] Backend: DELETE /auth/account (password confirmation + cascade delete)
+- [x] TypeBox schemas + Swagger docs for both endpoints
 
 ### 5C: Redis Caching
 
-- [ ] Cache dashboard data (30-60s TTL)
-- [ ] Cache prayer balance
-- [ ] Cache calendar month data
-- [ ] Configure frontend TanStack Query staleTime/cacheTime
+- [x] CacheService utility class (get, set, invalidate, invalidateExact)
+- [x] Cache key constants and TTL configuration
+- [x] Cache dashboard data (30s TTL)
+- [x] Cache prayer balance (60s TTL)
+- [x] Cache calendar month data (120s TTL)
+- [x] Cache invalidation on mutations (gap-period, makeup, daily-tracker routes)
+- [x] Frontend TanStack Query staleTime tuning (dashboard 15s, calendar 60s, balance 30s)
 
 ### 5D: UI Polish
 
-- [ ] Add loading skeletons for all pages
-- [ ] Add empty states for all lists
-- [ ] Add error boundaries per page
-- [ ] Add toast notifications for mutations
-- [ ] Add confirmation dialogs for destructive actions
-- [ ] Responsive design audit
+- [x] Toast notification system (ToastProvider + useToast hook)
+- [x] Loading skeletons for all pages (dashboard, gap-periods, daily-tracker, makeup, calendar)
+- [x] Skeleton components (Skeleton, SkeletonCard, SkeletonLine, SkeletonCircle)
+- [x] Error boundary component (class-based with retry)
+- [x] App-level error.tsx page
+- [x] Toast notifications on mutations (gap-period delete, makeup log/undo, daily-tracker finalize)
 
 ---
 

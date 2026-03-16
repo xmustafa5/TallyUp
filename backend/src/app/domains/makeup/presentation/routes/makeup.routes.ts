@@ -9,9 +9,12 @@ import {
   listMakeupHistorySchema,
   getMakeupStatsSchema,
 } from '../schemas/makeup.schemas';
+import { CacheService } from '../../../../common/services/cache.service';
+import { CACHE_KEYS } from '../../../../common/constants/cache-keys';
 
 export default async function makeupRoutes(fastify: FastifyInstance) {
   const repository = new PrismaMakeupLogRepository(fastify.prisma);
+  const cache = new CacheService(fastify.redis);
 
   // All makeup routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
@@ -28,6 +31,13 @@ export default async function makeupRoutes(fastify: FastifyInstance) {
 
     const makeupLog = await repository.create(createData);
     await recalculateBalance(fastify.prisma, userId);
+
+    // Invalidate caches after mutation
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+      CACHE_KEYS.makeupStats(userId),
+    );
 
     return reply.code(201).send({
       success: true,
@@ -50,6 +60,13 @@ export default async function makeupRoutes(fastify: FastifyInstance) {
 
     await repository.delete(id);
     await recalculateBalance(fastify.prisma, userId);
+
+    // Invalidate caches after mutation
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+      CACHE_KEYS.makeupStats(userId),
+    );
 
     return reply.send({
       success: true,

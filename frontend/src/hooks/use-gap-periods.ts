@@ -73,5 +73,6 @@ export function usePrayerBalance() {
   return useQuery({
     queryKey: BALANCE_KEY,
     queryFn: getPrayerBalance,
+    staleTime: 30_000,
   });
 }

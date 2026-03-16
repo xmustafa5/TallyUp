@@ -10,6 +10,7 @@ export function useDashboard() {
   return useQuery({
     queryKey: DASHBOARD_KEY,
     queryFn: getDashboard,
+    staleTime: 15_000,
   });
 }
 
@@ -17,6 +18,7 @@ export function useCalendarMonth(year: number, month: number) {
   return useQuery({
     queryKey: ['progress', 'calendar', year, month] as const,
     queryFn: () => getCalendarMonth(year, month),
+    staleTime: 60_000,
   });
 }
 

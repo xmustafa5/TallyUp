@@ -10,9 +10,12 @@ import {
   getWeekSchema,
   getStreakSchema,
 } from '../schemas/daily-tracker.schemas';
+import { CacheService } from '../../../../common/services/cache.service';
+import { CACHE_KEYS } from '../../../../common/constants/cache-keys';
 
 export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
   const repository = new PrismaDailyTrackerRepository(fastify.prisma);
+  const cache = new CacheService(fastify.redis);
 
   // All daily tracker routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
@@ -124,6 +127,9 @@ export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
       }
     }
 
+    // Invalidate dashboard cache after marking prayers
+    await cache.invalidateExact(CACHE_KEYS.dashboard(userId));
+
     return reply.send({
       success: true,
       data: tracker.toResponse(),
@@ -159,6 +165,14 @@ export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
 
     // Re-fetch to get updated state
     const finalized = await repository.findByUserAndDate(userId, parsedDate);
+
+    // Invalidate all relevant caches after finalization
+    await cache.invalidateExact(
+      CACHE_KEYS.dashboard(userId),
+      CACHE_KEYS.balance(userId),
+      CACHE_KEYS.makeupStats(userId),
+    );
+    await cache.invalidate(`calendar:${userId}:*`);
 
     return reply.send({
       success: true,

@@ -8,6 +8,7 @@ import { useTodayTracker, useMarkPrayers, useFinalizeDay, useWeekTrackers, useSt
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
 import type { PrayerType } from '@/constants/prayers';
 import { useState } from 'react';
+import { useToast } from '@/components/shared/toast';
 
 function formatDisplayDate(dateString: string): string {
   return new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {
@@ -38,6 +39,7 @@ export default function DailyTrackerPage() {
   const finalizeMutation = useFinalizeDay();
 
   const [pendingPrayer, setPendingPrayer] = useState<string | null>(null);
+  const { toast } = useToast();
 
   function handleToggle(prayerType: PrayerType) {
     if (!today) return;
@@ -46,7 +48,12 @@ export default function DailyTrackerPage() {
     setPendingPrayer(prayerType);
     markMutation.mutate(
       { date: today.date, prayers: { [field]: !currentValue } },
-      { onSettled: () => setPendingPrayer(null) },
+      {
+        onError: () => {
+          toast({ message: 'Failed to update prayer', type: 'error' });
+        },
+        onSettled: () => setPendingPrayer(null),
+      },
     );
   }
 
@@ -56,7 +63,14 @@ export default function DailyTrackerPage() {
       'Are you sure you want to finalize today? Missed prayers will be added to your makeup balance. This cannot be undone.',
     );
     if (confirmed) {
-      finalizeMutation.mutate(today.date);
+      finalizeMutation.mutate(today.date, {
+        onSuccess: () => {
+          toast({ message: 'Day finalized', type: 'success' });
+        },
+        onError: () => {
+          toast({ message: 'Failed to finalize day', type: 'error' });
+        },
+      });
     }
   }
 

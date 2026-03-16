@@ -1,7 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { registerUser, loginUser } from '../../domain/services/auth.service';
+import { Password } from '../../domain/value-objects/password';
 import { PrismaUserRepository } from '../../infrastructure/repositories/prisma-user.repository';
-import { registerSchema, loginSchema, refreshSchema, meSchema } from '../schemas/auth.schemas';
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  meSchema,
+  changePasswordSchema,
+  deleteAccountSchema,
+} from '../schemas/auth.schemas';
 
 export default async function authRoutes(fastify: FastifyInstance) {
   const userRepository = new PrismaUserRepository(fastify.prisma);
@@ -153,6 +161,78 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.send({
         success: true,
         data: user.toResponse(),
+      });
+    },
+  );
+
+  // PUT /auth/change-password
+  fastify.put(
+    '/change-password',
+    { onRequest: [fastify.authenticate], schema: changePasswordSchema },
+    async (request, reply) => {
+      const { id } = request.user as { id: string };
+      const { currentPassword, newPassword } = request.body as {
+        currentPassword: string;
+        newPassword: string;
+      };
+
+      const user = await userRepository.findById(id);
+      if (!user) {
+        return reply.notFound('User not found');
+      }
+
+      if (!user.passwordHash) {
+        return reply.unauthorized('Account does not use password authentication');
+      }
+
+      const existingPassword = Password.fromHash(user.passwordHash);
+      const isValid = await existingPassword.verify(currentPassword);
+      if (!isValid) {
+        return reply.unauthorized('Current password is incorrect');
+      }
+
+      const newHashedPassword = await Password.fromPlainText(newPassword);
+
+      await fastify.prisma.user.update({
+        where: { id },
+        data: { passwordHash: newHashedPassword.hash },
+      });
+
+      return reply.send({
+        success: true,
+        message: 'Password changed successfully',
+      });
+    },
+  );
+
+  // DELETE /auth/account
+  fastify.delete(
+    '/account',
+    { onRequest: [fastify.authenticate], schema: deleteAccountSchema },
+    async (request, reply) => {
+      const { id } = request.user as { id: string };
+      const { password } = request.body as { password: string };
+
+      const user = await userRepository.findById(id);
+      if (!user) {
+        return reply.notFound('User not found');
+      }
+
+      if (!user.passwordHash) {
+        return reply.unauthorized('Account does not use password authentication');
+      }
+
+      const existingPassword = Password.fromHash(user.passwordHash);
+      const isValid = await existingPassword.verify(password);
+      if (!isValid) {
+        return reply.unauthorized('Password is incorrect');
+      }
+
+      await fastify.prisma.user.delete({ where: { id } });
+
+      return reply.send({
+        success: true,
+        message: 'Account deleted successfully',
       });
     },
   );

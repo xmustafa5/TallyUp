@@ -5,17 +5,26 @@ import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGapPeriods, useDeleteGapPeriod } from '@/hooks/use-gap-periods';
 import { CalculationSummary } from '@/components/gap-periods/calculation-summary';
+import { useToast } from '@/components/shared/toast';
 
 export default function GapPeriodsPage() {
   const { data: gapPeriods, isLoading, error } = useGapPeriods();
   const deleteMutation = useDeleteGapPeriod();
+  const { toast } = useToast();
 
   function handleDelete(id: string) {
     const confirmed = window.confirm(
       'Are you sure you want to delete this gap period? This action cannot be undone.',
     );
     if (confirmed) {
-      deleteMutation.mutate(id);
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          toast({ message: 'Gap period deleted', type: 'success' });
+        },
+        onError: () => {
+          toast({ message: 'Failed to delete gap period', type: 'error' });
+        },
+      });
     }
   }
 

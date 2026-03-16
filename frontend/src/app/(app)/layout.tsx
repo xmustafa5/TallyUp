@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Calendar, CheckSquare, Home, RotateCcw, Settings } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { AuthGuard } from '@/components/shared/auth-guard';
+import { LanguageSwitcher } from '@/components/shared/language-switcher';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Dashboard', icon: Home },
-  { href: '/daily-tracker', label: 'Daily', icon: CheckSquare },
-  { href: '/makeup', label: 'Makeup', icon: RotateCcw },
-  { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/setup', label: 'Settings', icon: Settings },
+  { href: '/', labelKey: 'dashboard', icon: Home },
+  { href: '/daily-tracker', labelKey: 'daily', icon: CheckSquare },
+  { href: '/makeup', labelKey: 'makeup', icon: RotateCcw },
+  { href: '/calendar', labelKey: 'calendar', icon: Calendar },
+  { href: '/settings', labelKey: 'settings', icon: Settings },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -22,12 +24,13 @@ function isActive(pathname: string, href: string): boolean {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useTranslations('nav');
 
   return (
     <AuthGuard>
       <div className="flex min-h-screen flex-col md:flex-row">
         {/* Desktop Sidebar */}
-        <aside className="hidden w-56 shrink-0 border-r bg-card md:block">
+        <aside className="hidden w-56 shrink-0 border-r bg-card md:block rtl:border-r-0 rtl:border-l">
           <div className="sticky top-0 flex h-screen flex-col">
             <div className="border-b p-4">
               <h1 className="text-lg font-bold tracking-tight">Qatha</h1>
@@ -47,11 +50,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     }`}
                   >
                     <Icon className="size-4" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}
             </nav>
+            <div className="border-t p-3">
+              <LanguageSwitcher />
+            </div>
           </div>
         </aside>
 
@@ -75,7 +81,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   <Icon className="size-5" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}

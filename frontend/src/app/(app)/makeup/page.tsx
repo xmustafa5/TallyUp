@@ -6,6 +6,7 @@ import { useMakeupHistory, useLogMakeup, useUndoMakeup, useMakeupStats } from '@
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
 import type { PrayerType } from '@/constants/prayers';
 import { useState } from 'react';
+import { useToast } from '@/components/shared/toast';
 
 function getPrayerFieldKey(pt: PrayerType): 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' {
   return pt.toLowerCase() as 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
@@ -54,10 +55,17 @@ export default function MakeupPage() {
   const undoMutation = useUndoMakeup();
 
   const [loggingPrayer, setLoggingPrayer] = useState<string | null>(null);
+  const { toast } = useToast();
 
   function handleLog(prayerType: PrayerType) {
     setLoggingPrayer(prayerType);
     logMutation.mutate(prayerType, {
+      onSuccess: () => {
+        toast({ message: 'Prayer logged', type: 'success' });
+      },
+      onError: () => {
+        toast({ message: 'Failed to log prayer', type: 'error' });
+      },
       onSettled: () => setLoggingPrayer(null),
     });
   }
@@ -65,7 +73,14 @@ export default function MakeupPage() {
   function handleUndo(id: string) {
     const confirmed = window.confirm('Undo this makeup prayer log?');
     if (confirmed) {
-      undoMutation.mutate(id);
+      undoMutation.mutate(id, {
+        onSuccess: () => {
+          toast({ message: 'Prayer log undone', type: 'success' });
+        },
+        onError: () => {
+          toast({ message: 'Failed to undo prayer log', type: 'error' });
+        },
+      });
     }
   }
 
