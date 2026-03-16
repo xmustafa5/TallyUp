@@ -24,6 +24,7 @@
     "daily": "Daily",
     "makeup": "Makeup",
     "calendar": "Calendar",
+    "schedule": "Schedule",
     "settings": "Settings"
   },
   "auth": {

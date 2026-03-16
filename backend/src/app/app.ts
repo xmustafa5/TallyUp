@@ -140,6 +140,14 @@ All errors follow a consistent format:
           name: 'Progress',
           description: 'Dashboard, calendar, and streak endpoints',
         },
+        {
+          name: 'Schedule',
+          description: 'Makeup prayer schedule and goal tracking endpoints',
+        },
+        {
+          name: 'Notifications',
+          description: 'Device registration, notification preferences, and reminders',
+        },
       ],
       components: {
         schemas: {

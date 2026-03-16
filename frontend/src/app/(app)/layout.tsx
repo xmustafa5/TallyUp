@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CheckSquare, Home, RotateCcw, Settings } from 'lucide-react';
+import { Calendar, CheckSquare, Home, RotateCcw, Settings, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { AuthGuard } from '@/components/shared/auth-guard';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/daily-tracker', labelKey: 'daily', icon: CheckSquare },
   { href: '/makeup', labelKey: 'makeup', icon: RotateCcw },
   { href: '/calendar', labelKey: 'calendar', icon: Calendar },
+  { href: '/schedule', labelKey: 'schedule', icon: Target },
   { href: '/settings', labelKey: 'settings', icon: Settings },
 ] as const;
 

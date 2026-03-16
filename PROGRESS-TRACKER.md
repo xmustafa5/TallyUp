@@ -188,19 +188,26 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 6A: Schedule Planner (F-09)
 
-- [ ] Create Schedule Prisma model
-- [ ] Create schedule domain backend (CRUD, GET /schedule/today)
-- [ ] Build goal settings page
-- [ ] Integrate goals into calendar + dashboard
+- [x] Create Schedule Prisma model (dailyGoal, weeklyGoal, isActive)
+- [x] Create Schedule entity with fromPrisma(), toResponse()
+- [x] Create schedule routes (GET /, PUT /, GET /today with daily+weekly progress)
+- [x] Create TypeBox schemas + Swagger docs + "Schedule" tag
+- [x] Write schedule entity tests (7 tests)
+- [x] Create schedule API service + React Query hooks (useSchedule, useUpdateSchedule, useTodayProgress)
+- [x] Build schedule settings page (goal inputs, daily/weekly progress bars, toast on save)
+- [x] Integrate goals into dashboard (Today's Goal card with progress bar)
+- [x] Add Schedule nav item to app shell
 
 ### 6B: Push Notifications (F-08)
 
-- [ ] Create DeviceToken Prisma model
-- [ ] Create notification preferences backend
-- [ ] Create BullMQ reminder jobs
-- [ ] Frontend service worker registration
-- [ ] Permission request flow
-- [ ] Notification settings in settings page
+- [x] Create DeviceToken + NotificationPreference Prisma models + NotificationType enum
+- [x] Create notification service stub (console.log, ready for FCM integration)
+- [x] Create notification routes (POST/DELETE /devices, GET/PUT /preferences)
+- [x] Create TypeBox schemas + Swagger docs + "Notifications" tag
+- [x] Create BullMQ reminder jobs (prayer-reminder 8AM UTC, streak-reminder 9PM UTC)
+- [x] Write notification tests (3 tests)
+- [x] Create notifications API service + React Query hooks
+- [x] Add Notification preferences toggles to settings page (4 toggles)
 
 ---
 

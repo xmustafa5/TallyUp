@@ -5,12 +5,16 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { Loader2, LogOut, Trash2, Check } from 'lucide-react';
+import { Loader2, LogOut, Trash2, Check, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
 import { updateProfile } from '@/services/profile';
 import { changePassword, deleteAccount } from '@/services/settings';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
+import {
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+} from '@/hooks/use-notifications';
 
 // -- Profile form schema --
 const profileSchema = z.object({
@@ -400,6 +404,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Notifications Section */}
+      <NotificationPreferencesSection />
+
       {/* Danger Zone - Delete Account */}
       <div className="rounded-lg border border-destructive/30 bg-card p-6">
         <div>
@@ -492,6 +499,104 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// -- Toggle Row Component --
+interface ToggleRowProps {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+function ToggleRow({ label, description, checked, disabled, onChange }: ToggleRowProps) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between rounded-md px-3 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+    >
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <div
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          checked ? 'bg-primary' : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`inline-block size-4 rounded-full bg-background shadow-sm transition-transform ${
+            checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </div>
+    </button>
+  );
+}
+
+// -- Notification Preferences Section --
+function NotificationPreferencesSection() {
+  const { data: preferences, isLoading } = useNotificationPreferences();
+  const updatePreferences = useUpdateNotificationPreferences();
+
+  function handleToggle(key: string, value: boolean) {
+    updatePreferences.mutate({ [key]: value });
+  }
+
+  return (
+    <div className="rounded-lg border bg-card p-6">
+      <div className="flex items-center gap-2">
+        <Bell className="size-5 text-muted-foreground" />
+        <div>
+          <h2 className="text-lg font-semibold">Notifications</h2>
+          <p className="text-sm text-muted-foreground">
+            Choose which notifications you want to receive
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="mt-4 flex items-center justify-center py-6">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading preferences...</span>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-1">
+          <ToggleRow
+            label="Prayer Reminders"
+            description="Daily reminders to complete your prayers"
+            checked={preferences?.prayerReminders ?? true}
+            disabled={updatePreferences.isPending}
+            onChange={(val) => handleToggle('prayerReminders', val)}
+          />
+          <ToggleRow
+            label="Goal Reminders"
+            description="Notifications when behind on daily or weekly goals"
+            checked={preferences?.goalReminders ?? true}
+            disabled={updatePreferences.isPending}
+            onChange={(val) => handleToggle('goalReminders', val)}
+          />
+          <ToggleRow
+            label="Streak Reminders"
+            description="Evening reminder to maintain your prayer streak"
+            checked={preferences?.streakReminders ?? true}
+            disabled={updatePreferences.isPending}
+            onChange={(val) => handleToggle('streakReminders', val)}
+          />
+          <ToggleRow
+            label="Milestones"
+            description="Celebration notifications when you reach milestones"
+            checked={preferences?.milestones ?? true}
+            disabled={updatePreferences.isPending}
+            onChange={(val) => handleToggle('milestones', val)}
+          />
+        </div>
+      )}
     </div>
   );
 }

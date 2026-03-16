@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, CheckSquare, Loader2, LogOut, RotateCcw, Settings } from 'lucide-react';
+import { Calendar, CheckSquare, Loader2, LogOut, RotateCcw, Settings, Target } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ProgressCircle } from '@/components/dashboard/progress-circle';
@@ -9,11 +9,13 @@ import { TodayStatus } from '@/components/dashboard/today-status';
 import { MilestoneBanner } from '@/components/dashboard/milestone-banner';
 import { StreakDisplay } from '@/components/prayer-tracking/streak-display';
 import { useDashboard } from '@/hooks/use-progress';
+import { useTodayProgress } from '@/hooks/use-schedule';
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const { data: dashboard, isLoading, error } = useDashboard();
+  const { data: goalProgress } = useTodayProgress();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -75,6 +77,36 @@ export default function DashboardPage() {
 
           {/* Today's Status */}
           <TodayStatus todayStatus={dashboard.todayStatus} />
+
+          {/* Today's Goal Progress */}
+          {goalProgress && (
+            <Link href="/schedule" className="block">
+              <div className="rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Target className="size-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium">Today&apos;s Goal</h3>
+                    <p className="text-lg font-bold">
+                      {goalProgress.dailyCompleted}/{goalProgress.dailyGoal} today
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">
+                      {goalProgress.weeklyCompleted}/{goalProgress.weeklyGoal} this week
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${goalProgress.dailyPercentage}%` }}
+                  />
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* Streak */}
           <div className="space-y-2">

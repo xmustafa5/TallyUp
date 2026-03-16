@@ -36,6 +36,13 @@ enum MakeupSource {
   DAILY_MISSED
 }
 
+enum NotificationType {
+  PRAYER_REMINDER
+  GOAL_REMINDER
+  STREAK_REMINDER
+  MILESTONE
+}
+
 // ──────────────────────────────────────────────
 // Models
 // ──────────────────────────────────────────────
@@ -53,11 +60,14 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  gapPeriods   GapPeriod[]
-  prayerBalance PrayerBalance?
-  makeupLogs   MakeupLog[]
-  dailyTrackers DailyTracker[]
-  streak       Streak?
+  gapPeriods      GapPeriod[]
+  prayerBalance   PrayerBalance?
+  makeupLogs      MakeupLog[]
+  dailyTrackers   DailyTracker[]
+  streak          Streak?
+  schedule        Schedule?
+  deviceTokens    DeviceToken[]
+  notificationPreferences NotificationPreference?
 
   @@map("users")
 }
@@ -145,4 +155,48 @@ model Streak {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("streaks")
+}
+
+model Schedule {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @map("user_id") @db.Uuid
+  dailyGoal  Int      @default(5) @map("daily_goal") @db.SmallInt
+  weeklyGoal Int      @default(35) @map("weekly_goal") @db.SmallInt
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("schedules")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  platform  String   @db.VarChar(20)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "device_tokens_user_id_idx")
+  @@map("device_tokens")
+}
+
+model NotificationPreference {
+  id              String  @id @default(uuid()) @db.Uuid
+  userId          String  @unique @map("user_id") @db.Uuid
+  prayerReminders Boolean @default(true) @map("prayer_reminders")
+  goalReminders   Boolean @default(true) @map("goal_reminders")
+  streakReminders Boolean @default(true) @map("streak_reminders")
+  milestones      Boolean @default(true)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
