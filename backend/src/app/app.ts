@@ -124,6 +124,10 @@ All errors follow a consistent format:
           name: 'Profile',
           description: 'User profile and settings endpoints',
         },
+        {
+          name: 'Gap Periods',
+          description: 'Gap period management and prayer calculation endpoints',
+        },
       ],
       components: {
         schemas: {

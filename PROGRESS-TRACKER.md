@@ -58,23 +58,28 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 2A: Gap Period Domain (Backend)
 
-- [ ] Create GapPeriod entity with validation
-- [ ] Create DateRange value object with overlap detection
-- [ ] Create prayer-calculator.service.ts (days calc, overlap merging, age-to-date)
-- [ ] Create GapPeriodRepository interface + Prisma implementation
-- [ ] Create gap period routes (CRUD + calculate)
-- [ ] Create TypeBox schemas + Swagger docs
-- [ ] Implement PrayerBalance recalculation on gap period changes
-- [ ] Write prayer calculator tests (overlap, dates, ages)
-- [ ] Write gap period route tests
+- [x] Create GapPeriod entity with validation
+- [x] Create DateRange value object with overlap detection
+- [x] Create prayer-calculator.service.ts (days calc, overlap merging, age-to-date)
+- [x] Create GapPeriodRepository interface + Prisma implementation
+- [x] Create gap period routes (CRUD + calculate + balance)
+- [x] Create TypeBox schemas + Swagger docs
+- [x] Implement PrayerBalance recalculation on gap period changes
+- [x] Add "Gap Periods" Swagger tag
+- [x] Write prayer calculator tests (30 tests: overlap, dates, ages, DateRange)
+- [x] Write gap period route tests (23 tests: auth, CRUD, calculate, balance, overlap merging)
 
 ### 2B: Gap Period & Calculator UI (Frontend)
 
-- [ ] Build gap periods list page
-- [ ] Build gap period form (date/age toggle)
-- [ ] Build calculation summary component
+- [x] Create gap-periods API service with TypeScript interfaces
+- [x] Create React Query hooks (useGapPeriods, useCreateGapPeriod, useUpdateGapPeriod, useDeleteGapPeriod, useCalculation, usePrayerBalance)
+- [x] Build gap periods list page with cards, empty state, delete confirmation
+- [x] Build create gap period form (DATE_RANGE/AGE_RANGE toggle, zod validation)
+- [x] Build edit gap period page (pre-populated, date-only editing)
+- [x] Build calculation summary component (totals, per-type breakdown, merged periods)
+- [x] Build prayer balance component (progress bar, per-type counts)
+- [x] Update dashboard with prayer balance summary and quick links
 - [ ] Integrate into onboarding flow
-- [ ] Create use-gap-periods and use-prayer-balance hooks
 
 ---
 
