@@ -8,48 +8,48 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 
 ### 1A: Database Schema
 
-- [ ] Design and write Prisma schema with all models (User, GapPeriod, PrayerBalance, MakeupLog, DailyTracker, Streak)
-- [ ] Define enums (PrayerType, AuthProvider, InputMethod, MakeupSource)
-- [ ] Add indexes and unique constraints
-- [ ] Push schema to database (`docker compose restart app`)
+- [x] Design and write Prisma schema with all models (User, GapPeriod, PrayerBalance, MakeupLog, DailyTracker, Streak)
+- [x] Define enums (PrayerType, AuthProvider, InputMethod, MakeupSource)
+- [x] Add indexes and unique constraints
+- [ ] Push schema to database (`docker compose restart app`) -- Docker not running
 
 ### 1B: Auth Domain (Backend)
 
-- [ ] Install auth dependencies (@fastify/jwt, bcrypt)
-- [ ] Add auth env variables (JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN)
-- [ ] Create User entity with toResponse()
-- [ ] Create Email and Password value objects
-- [ ] Create UserRepository interface
-- [ ] Create auth.service.ts (validation logic)
-- [ ] Create PrismaUserRepository implementation
-- [ ] Create auth plugin (JWT verify, authenticate hook)
-- [ ] Create auth routes (register, login, refresh, me)
-- [ ] Create TypeBox schemas with full Swagger docs
-- [ ] Add "Auth" Swagger tag
-- [ ] Write auth tests (unit + integration)
+- [x] Install auth dependencies (@fastify/jwt, bcrypt)
+- [x] Add auth env variables (JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_EXPIRES_IN)
+- [x] Create User entity with toResponse()
+- [x] Create Email and Password value objects
+- [x] Create UserRepository interface
+- [x] Create auth.service.ts (validation logic)
+- [x] Create PrismaUserRepository implementation
+- [x] Create auth plugin (JWT verify, authenticate hook)
+- [x] Create auth routes (register, login, refresh, me)
+- [x] Create TypeBox schemas with full Swagger docs
+- [x] Add "Auth" Swagger tag
+- [x] Write auth tests (unit + integration)
 
 ### 1C: Frontend Foundation
 
-- [ ] Install UI libraries (shadcn/ui init, lucide-react)
-- [ ] Install data libraries (axios, @tanstack/react-query)
-- [ ] Install form libraries (react-hook-form, zod, @hookform/resolvers)
-- [ ] Install state/i18n (zustand, next-intl)
-- [ ] Install utilities (date-fns, clsx, tailwind-merge)
-- [ ] Set up directory structure (components/, services/, hooks/, stores/, types/, lib/, constants/)
-- [ ] Configure Axios instance with JWT interceptor
-- [ ] Configure TanStack Query client
-- [ ] Create Zustand auth store (user, tokens, persist)
-- [ ] Build root layout (providers, fonts, metadata)
-- [ ] Build login page
-- [ ] Build register page
-- [ ] Build auth guard component
+- [x] Install UI libraries (shadcn/ui init, lucide-react)
+- [x] Install data libraries (axios, @tanstack/react-query)
+- [x] Install form libraries (react-hook-form, zod, @hookform/resolvers)
+- [x] Install state/i18n (zustand, next-intl)
+- [x] Install utilities (date-fns, clsx, tailwind-merge)
+- [x] Set up directory structure (components/, services/, hooks/, stores/, types/, lib/, constants/)
+- [x] Configure Axios instance with JWT interceptor
+- [x] Configure TanStack Query client
+- [x] Create Zustand auth store (user, tokens, persist)
+- [x] Build root layout (providers, fonts, metadata)
+- [x] Build login page
+- [x] Build register page
+- [x] Build auth guard component
 - [ ] Set up next-intl (middleware, en.json, ar.json)
 
 ### 1D: Profile Setup (F-01)
 
-- [ ] Create profile domain backend (GET /profile, PUT /profile)
-- [ ] Create profile TypeBox schemas + Swagger docs
-- [ ] Build setup page (birthdate picker, puberty age)
+- [x] Create profile domain backend (GET /profile, PUT /profile)
+- [x] Create profile TypeBox schemas + Swagger docs
+- [x] Build setup page (birthdate picker, puberty age)
 - [ ] Implement onboarding flow redirect logic
 
 ---

@@ -12,6 +12,7 @@ services:
       - PORT=3000
       - DATABASE_URL=postgresql://postgres:password@db:5432/fastify_template_db
       - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev-jwt-secret-change-in-production
     restart: unless-stopped
     depends_on:
       db:

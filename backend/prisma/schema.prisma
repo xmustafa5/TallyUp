@@ -7,14 +7,142 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Add your models below. Example:
-//
-// model User {
-//   id        String   @id @default(uuid()) @db.Uuid
-//   email     String   @unique @db.VarChar(255)
-//   name      String   @db.VarChar(255)
-//   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-//   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
-//
-//   @@map("users")
-// }
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  APPLE
+}
+
+enum PrayerType {
+  FAJR
+  DHUHR
+  ASR
+  MAGHRIB
+  ISHA
+}
+
+enum InputMethod {
+  DATE_RANGE
+  AGE_RANGE
+}
+
+enum MakeupSource {
+  MANUAL
+  GAP_PERIOD
+  DAILY_MISSED
+}
+
+// ──────────────────────────────────────────────
+// Models
+// ──────────────────────────────────────────────
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  email        String       @unique @db.VarChar(255)
+  name         String       @db.VarChar(255)
+  passwordHash String?      @map("password_hash") @db.VarChar(255)
+  birthdate    DateTime?    @db.Date
+  pubertyAge   Int?         @map("puberty_age") @db.SmallInt
+  provider     AuthProvider @default(LOCAL)
+  providerId   String?      @map("provider_id") @db.VarChar(255)
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  gapPeriods   GapPeriod[]
+  prayerBalance PrayerBalance?
+  makeupLogs   MakeupLog[]
+  dailyTrackers DailyTracker[]
+  streak       Streak?
+
+  @@map("users")
+}
+
+model GapPeriod {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  startDate       DateTime    @map("start_date") @db.Date
+  endDate         DateTime    @map("end_date") @db.Date
+  inputMethod     InputMethod @map("input_method")
+  originalStartAge Int?       @map("original_start_age") @db.SmallInt
+  originalEndAge   Int?       @map("original_end_age") @db.SmallInt
+  totalDays       Int         @map("total_days")
+  totalPrayers    Int         @map("total_prayers")
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "gap_periods_user_id_idx")
+  @@map("gap_periods")
+}
+
+model PrayerBalance {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  fajr           Int      @default(0)
+  dhuhr          Int      @default(0)
+  asr            Int      @default(0)
+  maghrib        Int      @default(0)
+  isha           Int      @default(0)
+  totalRemaining Int      @default(0) @map("total_remaining")
+  totalCompleted Int      @default(0) @map("total_completed")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("prayer_balances")
+}
+
+model MakeupLog {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  prayerType  PrayerType   @map("prayer_type")
+  source      MakeupSource @default(MANUAL)
+  completedAt DateTime     @map("completed_at") @db.Timestamptz
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "makeup_logs_user_id_idx")
+  @@index([userId, completedAt], map: "makeup_logs_user_completed_idx")
+  @@map("makeup_logs")
+}
+
+model DailyTracker {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  date        DateTime @db.Date
+  fajr        Boolean  @default(false)
+  dhuhr       Boolean  @default(false)
+  asr         Boolean  @default(false)
+  maghrib     Boolean  @default(false)
+  isha        Boolean  @default(false)
+  isFinalized Boolean  @default(false) @map("is_finalized")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date], map: "daily_trackers_user_date_unique")
+  @@index([userId], map: "daily_trackers_user_id_idx")
+  @@map("daily_trackers")
+}
+
+model Streak {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @unique @map("user_id") @db.Uuid
+  currentStreak  Int       @default(0) @map("current_streak")
+  longestStreak  Int       @default(0) @map("longest_streak")
+  lastActiveDate DateTime? @map("last_active_date") @db.Date
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("streaks")
+}

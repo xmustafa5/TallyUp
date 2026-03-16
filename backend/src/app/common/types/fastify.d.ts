@@ -9,5 +9,13 @@ declare module 'fastify' {
     queues?: {
       default: Queue;
     };
+    authenticate: (request: any, reply: any) => Promise<void>;
+  }
+}
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    payload: { id: string; email?: string; type?: string };
+    user: { id: string; email: string };
   }
 }

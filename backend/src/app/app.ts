@@ -116,6 +116,14 @@ All errors follow a consistent format:
           name: 'System',
           description: 'System health and monitoring endpoints',
         },
+        {
+          name: 'Auth',
+          description: 'Authentication and user management endpoints',
+        },
+        {
+          name: 'Profile',
+          description: 'User profile and settings endpoints',
+        },
       ],
       components: {
         schemas: {

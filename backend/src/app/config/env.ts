@@ -8,6 +8,9 @@ export interface EnvConfig {
   RATE_LIMIT_MAX: number;
   RATE_LIMIT_WINDOW: string;
   CORS_ORIGIN?: string;
+  JWT_SECRET: string;
+  JWT_EXPIRES_IN: string;
+  JWT_REFRESH_EXPIRES_IN: string;
 }
 
 /**
@@ -16,7 +19,7 @@ export interface EnvConfig {
 export function getEnvJsonSchema() {
   return {
     type: 'object' as const,
-    required: ['DATABASE_URL'],
+    required: ['DATABASE_URL', 'JWT_SECRET'],
     properties: {
       NODE_ENV: {
         type: 'string' as const,
@@ -31,6 +34,9 @@ export function getEnvJsonSchema() {
       RATE_LIMIT_MAX: { type: 'number' as const, default: 1000 },
       RATE_LIMIT_WINDOW: { type: 'string' as const, default: '1 minute' },
       CORS_ORIGIN: { type: 'string' as const },
+      JWT_SECRET: { type: 'string' as const },
+      JWT_EXPIRES_IN: { type: 'string' as const, default: '15m' },
+      JWT_REFRESH_EXPIRES_IN: { type: 'string' as const, default: '30d' },
     },
   };
 }
