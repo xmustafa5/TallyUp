@@ -219,6 +219,62 @@ All errors follow a consistent format:
     staticCSP: false,
   });
 
+  // Register shared error schemas so Fastify serialization can resolve $ref
+  fastify.addSchema({
+    $id: 'BadRequestError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 400 },
+      error: { type: 'string', example: 'Bad Request' },
+      message: { type: 'string', example: 'Invalid input' },
+    },
+  });
+  fastify.addSchema({
+    $id: 'UnauthorizedError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 401 },
+      error: { type: 'string', example: 'Unauthorized' },
+      message: { type: 'string', example: 'Invalid or expired token' },
+    },
+  });
+  fastify.addSchema({
+    $id: 'ForbiddenError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 403 },
+      error: { type: 'string', example: 'Forbidden' },
+      message: { type: 'string', example: 'Access denied' },
+    },
+  });
+  fastify.addSchema({
+    $id: 'NotFoundError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 404 },
+      error: { type: 'string', example: 'Not Found' },
+      message: { type: 'string', example: 'Resource not found' },
+    },
+  });
+  fastify.addSchema({
+    $id: 'ConflictError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 409 },
+      error: { type: 'string', example: 'Conflict' },
+      message: { type: 'string', example: 'Resource already exists' },
+    },
+  });
+  fastify.addSchema({
+    $id: 'InternalServerError',
+    type: 'object',
+    properties: {
+      statusCode: { type: 'number', example: 500 },
+      error: { type: 'string', example: 'Internal Server Error' },
+      message: { type: 'string', example: 'An unexpected error occurred' },
+    },
+  });
+
   fastify.log.info('Swagger documentation available at /documentation');
 
   // ========================================================================

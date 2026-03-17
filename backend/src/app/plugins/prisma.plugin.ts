@@ -1,12 +1,15 @@
 import fp from 'fastify-plugin';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 export default fp(
   async (fastify) => {
-    // Set DATABASE_URL for Prisma to pick up via prisma.config.ts
-    process.env.DATABASE_URL = fastify.config.DATABASE_URL;
+    const adapter = new PrismaPg({
+      connectionString: fastify.config.DATABASE_URL,
+    });
 
     const prisma = new PrismaClient({
+      adapter,
       log:
         fastify.config.NODE_ENV === 'development'
           ? [

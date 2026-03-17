@@ -34,6 +34,25 @@ services:
     networks:
       - fastify-template-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: fastify-template-frontend
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - fastify-template-network
+
   db:
     image: postgres:16-alpine
     container_name: fastify-template-db

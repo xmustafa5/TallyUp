@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json ./
 RUN pnpm install
 
+COPY prisma.config.ts ./
 COPY prisma ./prisma
 RUN pnpm db:generate
 
