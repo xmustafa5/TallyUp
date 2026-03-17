@@ -184,19 +184,8 @@ export function calculateCalendarMonth(
         prayedCount = countPrayers(tracker);
         isFinalized = tracker.isFinalized;
       }
-    } else if (tracker) {
-      prayedCount = countPrayers(tracker);
-      isFinalized = tracker.isFinalized;
-
-      if (prayedCount === 5) {
-        status = 'complete';
-      } else if (prayedCount > 0) {
-        status = 'partial';
-      } else {
-        status = 'missed';
-      }
     } else {
-      // No tracker for this date -- check if it falls within a gap period
+      // Check if this date falls within a gap period
       const isInGapPeriod = gapPeriods.some((gp) => {
         const start = new Date(gp.startDate).getTime();
         const end = new Date(gp.endDate).getTime();
@@ -204,13 +193,40 @@ export function calculateCalendarMonth(
         return current >= start && current <= end;
       });
 
-      if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
-        // Check if this gap day has been fully made up
+      if (tracker) {
+        prayedCount = countPrayers(tracker);
+        isFinalized = tracker.isFinalized;
+
+        if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
+          // Day has both tracker AND is in gap period -- check makeup status too
+          const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
+          const gapComplete = completedMakeupDays > 0 && dayPosition < completedMakeupDays;
+          const dailyComplete = prayedCount === 5;
+
+          if (gapComplete) {
+            // Gap period day fully made up -- show as complete
+            status = 'complete';
+          } else if (dailyComplete || prayedCount > 0) {
+            status = 'partial';
+          } else {
+            status = 'missed';
+          }
+        } else {
+          // Regular day with tracker (not in gap period)
+          if (prayedCount === 5) {
+            status = 'complete';
+          } else if (prayedCount > 0) {
+            status = 'partial';
+          } else {
+            status = 'missed';
+          }
+        }
+      } else if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
+        // No tracker, but in gap period
         const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
         if (completedMakeupDays > 0 && dayPosition < completedMakeupDays) {
           status = 'complete';
         } else if (dayPosition === completedMakeupDays) {
-          // Current day being worked on -- check if any prayers done beyond completed days
           const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
           status = extraPrayers > 0 ? 'partial' : 'missed';
         } else {
