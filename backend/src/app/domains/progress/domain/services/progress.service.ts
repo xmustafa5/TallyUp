@@ -71,6 +71,16 @@ interface MakeupLogRecord {
   completedAt: Date;
 }
 
+interface GapPeriodRecord {
+  startDate: Date;
+  endDate: Date;
+}
+
+interface MergedPeriod {
+  startDate: Date;
+  endDate: Date;
+}
+
 const MILESTONES = [10, 25, 50, 75, 90, 100];
 
 /**
@@ -129,6 +139,10 @@ export function calculateCalendarMonth(
   makeupLogs: MakeupLogRecord[],
   year: number,
   month: number,
+  gapPeriods: GapPeriodRecord[] = [],
+  completedMakeupDays: number = 0,
+  allMergedPeriods: MergedPeriod[] = [],
+  completedPerType: Record<string, number> = {},
 ): CalendarDay[] {
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const today = new Date();
@@ -139,14 +153,14 @@ export function calculateCalendarMonth(
   // Index trackers by date string for fast lookup
   const trackerMap = new Map<string, DailyTrackerRecord>();
   for (const tracker of dailyTrackers) {
-    const dateKey = tracker.date.toISOString().split('T')[0];
+    const dateKey = new Date(tracker.date).toISOString().split('T')[0];
     trackerMap.set(dateKey, tracker);
   }
 
   // Count makeup logs per day
   const makeupCountMap = new Map<string, number>();
   for (const log of makeupLogs) {
-    const dateKey = log.completedAt.toISOString().split('T')[0];
+    const dateKey = new Date(log.completedAt).toISOString().split('T')[0];
     makeupCountMap.set(dateKey, (makeupCountMap.get(dateKey) ?? 0) + 1);
   }
 
@@ -182,11 +196,27 @@ export function calculateCalendarMonth(
         status = 'missed';
       }
     } else {
-      // No tracker for a past or current date
-      if (dateUTC.getTime() < todayUTC.getTime()) {
-        status = 'no-data';
+      // No tracker for this date -- check if it falls within a gap period
+      const isInGapPeriod = gapPeriods.some((gp) => {
+        const start = new Date(gp.startDate).getTime();
+        const end = new Date(gp.endDate).getTime();
+        const current = dateUTC.getTime();
+        return current >= start && current <= end;
+      });
+
+      if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
+        // Check if this gap day has been fully made up
+        const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
+        if (completedMakeupDays > 0 && dayPosition < completedMakeupDays) {
+          status = 'complete';
+        } else if (dayPosition === completedMakeupDays) {
+          // Current day being worked on -- check if any prayers done beyond completed days
+          const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
+          status = extraPrayers > 0 ? 'partial' : 'missed';
+        } else {
+          status = 'missed';
+        }
       } else {
-        // Today with no tracker yet
         status = 'no-data';
       }
     }
@@ -223,6 +253,35 @@ export function getMilestone(completionPercentage: number): string | null {
   }
 
   return null;
+}
+
+const MS_PER_DAY = 86400000;
+
+/**
+ * Counts how many gap period days come before a target date (0-indexed).
+ * Used to determine if a specific gap day has been "made up" based on
+ * the number of completed makeup days (from oldest to newest).
+ */
+function countGapDaysBefore(mergedPeriods: MergedPeriod[], targetDate: Date): number {
+  let count = 0;
+  const target = targetDate.getTime();
+
+  for (const gp of mergedPeriods) {
+    const start = new Date(gp.startDate).getTime();
+    const end = new Date(gp.endDate).getTime();
+
+    if (end < target) {
+      // Entire period is before target date
+      count += Math.floor((end - start) / MS_PER_DAY) + 1;
+    } else if (start <= target) {
+      // Target falls within this period -- count days from start to day before target
+      count += Math.floor((target - start) / MS_PER_DAY);
+      break; // No need to check further periods
+    }
+    // If start > target, this period is after target -- skip
+  }
+
+  return count;
 }
 
 function countPrayers(tracker: {

@@ -43,7 +43,7 @@ export class PrismaMakeupLogRepository implements MakeupLogRepository {
     userId: string,
     prayerType?: PrayerType,
   ): Promise<Record<string, number>> {
-    const where: Record<string, unknown> = { userId };
+    const where: Record<string, unknown> = { userId, source: 'MANUAL' };
     if (prayerType) {
       where.prayerType = prayerType;
     }

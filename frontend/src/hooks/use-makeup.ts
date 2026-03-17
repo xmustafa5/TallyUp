@@ -11,6 +11,9 @@ import {
 const MAKEUP_HISTORY_KEY = ['makeup', 'history'] as const;
 const MAKEUP_STATS_KEY = ['makeup', 'stats'] as const;
 const BALANCE_KEY = ['gap-periods', 'balance'] as const;
+const DASHBOARD_KEY = ['progress', 'dashboard'] as const;
+const CALENDAR_KEY = ['progress', 'calendar'] as const;
+const SCHEDULE_TODAY_KEY = ['schedule', 'today-progress'] as const;
 
 export function useMakeupHistory(prayerType?: string) {
   return useQuery({
@@ -28,6 +31,9 @@ export function useLogMakeup() {
       queryClient.invalidateQueries({ queryKey: MAKEUP_HISTORY_KEY });
       queryClient.invalidateQueries({ queryKey: MAKEUP_STATS_KEY });
       queryClient.invalidateQueries({ queryKey: BALANCE_KEY });
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+      queryClient.invalidateQueries({ queryKey: CALENDAR_KEY });
+      queryClient.invalidateQueries({ queryKey: SCHEDULE_TODAY_KEY });
     },
   });
 }
@@ -41,6 +47,9 @@ export function useUndoMakeup() {
       queryClient.invalidateQueries({ queryKey: MAKEUP_HISTORY_KEY });
       queryClient.invalidateQueries({ queryKey: MAKEUP_STATS_KEY });
       queryClient.invalidateQueries({ queryKey: BALANCE_KEY });
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+      queryClient.invalidateQueries({ queryKey: CALENDAR_KEY });
+      queryClient.invalidateQueries({ queryKey: SCHEDULE_TODAY_KEY });
     },
   });
 }

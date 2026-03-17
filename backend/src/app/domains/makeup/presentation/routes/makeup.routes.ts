@@ -38,6 +38,7 @@ export default async function makeupRoutes(fastify: FastifyInstance) {
       CACHE_KEYS.balance(userId),
       CACHE_KEYS.makeupStats(userId),
     );
+    await cache.invalidate(`calendar:${userId}:*`);
 
     return reply.code(201).send({
       success: true,
@@ -67,6 +68,7 @@ export default async function makeupRoutes(fastify: FastifyInstance) {
       CACHE_KEYS.balance(userId),
       CACHE_KEYS.makeupStats(userId),
     );
+    await cache.invalidate(`calendar:${userId}:*`);
 
     return reply.send({
       success: true,

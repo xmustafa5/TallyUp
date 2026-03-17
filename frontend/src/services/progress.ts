@@ -52,6 +52,28 @@ export async function getCalendarMonth(
   return data.data;
 }
 
+export interface GapDayDetail {
+  date: string;
+  isGapDay: boolean;
+  status: string;
+  prayers: {
+    fajr: boolean;
+    dhuhr: boolean;
+    asr: boolean;
+    maghrib: boolean;
+    isha: boolean;
+  } | null;
+  position?: number;
+  completedDays?: number;
+}
+
+export async function getCalendarDayDetail(date: string): Promise<GapDayDetail> {
+  const { data } = await api.get<ApiResponse<GapDayDetail>>(
+    `/progress/calendar/day/${date}`,
+  );
+  return data.data;
+}
+
 export async function getStreaks(): Promise<StreakData> {
   const { data } = await api.get<ApiResponse<StreakData>>('/progress/streaks');
   return data.data;

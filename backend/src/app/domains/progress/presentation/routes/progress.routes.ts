@@ -4,6 +4,7 @@ import {
   calculateCalendarMonth,
   getMilestone,
 } from '../../domain/services/progress.service';
+import { mergeOverlappingPeriods } from '../../../gap-period/domain/services/prayer-calculator.service';
 import {
   getDashboardSchema,
   getCalendarMonthSchema,
@@ -50,6 +51,7 @@ export default async function progressRoutes(fastify: FastifyInstance) {
       fastify.prisma.makeupLog.count({
         where: {
           userId,
+          source: 'MANUAL',
           completedAt: { gte: sevenDaysAgo },
         },
       }),
@@ -88,7 +90,7 @@ export default async function progressRoutes(fastify: FastifyInstance) {
     const firstDay = new Date(Date.UTC(year, month - 1, 1));
     const lastDay = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
-    const [dailyTrackers, makeupLogs] = await Promise.all([
+    const [dailyTrackers, makeupLogs, allGapPeriods, completedCounts] = await Promise.all([
       fastify.prisma.dailyTracker.findMany({
         where: {
           userId,
@@ -101,9 +103,44 @@ export default async function progressRoutes(fastify: FastifyInstance) {
           completedAt: { gte: firstDay, lte: lastDay },
         },
       }),
+      // Fetch ALL gap periods (not just this month) for global day ordering
+      fastify.prisma.gapPeriod.findMany({
+        where: { userId },
+        select: { startDate: true, endDate: true },
+      }),
+      // Count completed makeup prayers per type (MANUAL only)
+      fastify.prisma.makeupLog.groupBy({
+        by: ['prayerType'],
+        where: { userId, source: 'MANUAL' },
+        _count: true,
+      }),
     ]);
 
-    const calendarDays = calculateCalendarMonth(dailyTrackers, makeupLogs, year, month);
+    // Calculate how many full days have been made up
+    const completedPerType: Record<string, number> = {};
+    for (const c of completedCounts) {
+      completedPerType[c.prayerType] = c._count;
+    }
+    const completedMakeupDays = Math.min(
+      completedPerType['FAJR'] ?? 0,
+      completedPerType['DHUHR'] ?? 0,
+      completedPerType['ASR'] ?? 0,
+      completedPerType['MAGHRIB'] ?? 0,
+      completedPerType['ISHA'] ?? 0,
+    );
+
+    // Merge all gap periods for global ordering
+    const allMergedPeriods = mergeOverlappingPeriods(
+      allGapPeriods.map((gp) => ({
+        startDate: new Date(gp.startDate),
+        endDate: new Date(gp.endDate),
+      })),
+    );
+
+    const calendarDays = calculateCalendarMonth(
+      dailyTrackers, makeupLogs, year, month,
+      allGapPeriods, completedMakeupDays, allMergedPeriods, completedPerType,
+    );
 
     // Cache the result
     await cache.set(cacheKey, calendarDays, CACHE_TTL.calendar);
@@ -111,6 +148,110 @@ export default async function progressRoutes(fastify: FastifyInstance) {
     return reply.send({
       success: true,
       data: calendarDays,
+    });
+  });
+
+  // GET /progress/calendar/day/:date
+  // Returns makeup prayer status for a specific gap period day
+  fastify.get('/calendar/day/:date', async (request, reply) => {
+    const { id: userId } = request.user as { id: string };
+    const { date } = request.params as { date: string };
+
+    const parsedDate = new Date(date + 'T00:00:00.000Z');
+    if (isNaN(parsedDate.getTime())) {
+      return reply.badRequest('Invalid date format');
+    }
+
+    // Fetch all gap periods and completed counts in parallel
+    const [allGapPeriods, completedCounts] = await Promise.all([
+      fastify.prisma.gapPeriod.findMany({
+        where: { userId },
+        select: { startDate: true, endDate: true },
+      }),
+      fastify.prisma.makeupLog.groupBy({
+        by: ['prayerType'],
+        where: { userId, source: 'MANUAL' },
+        _count: true,
+      }),
+    ]);
+
+    // Check if this date falls in a gap period
+    const isInGapPeriod = allGapPeriods.some((gp) => {
+      const start = new Date(gp.startDate).getTime();
+      const end = new Date(gp.endDate).getTime();
+      return parsedDate.getTime() >= start && parsedDate.getTime() <= end;
+    });
+
+    if (!isInGapPeriod) {
+      return reply.send({
+        success: true,
+        data: { date, isGapDay: false, prayers: null, status: 'no-data' },
+      });
+    }
+
+    // Calculate completed per type
+    const completed: Record<string, number> = {};
+    for (const c of completedCounts) {
+      completed[c.prayerType] = c._count;
+    }
+
+    const fajrDone = completed['FAJR'] ?? 0;
+    const dhuhrDone = completed['DHUHR'] ?? 0;
+    const asrDone = completed['ASR'] ?? 0;
+    const maghribDone = completed['MAGHRIB'] ?? 0;
+    const ishaDone = completed['ISHA'] ?? 0;
+
+    const completedDays = Math.min(fajrDone, dhuhrDone, asrDone, maghribDone, ishaDone);
+
+    // Merge periods and find this day's position
+    const allMergedPeriods = mergeOverlappingPeriods(
+      allGapPeriods.map((gp) => ({
+        startDate: new Date(gp.startDate),
+        endDate: new Date(gp.endDate),
+      })),
+    );
+
+    // Count gap days before this date
+    let dayPosition = 0;
+    for (const gp of allMergedPeriods) {
+      const start = new Date(gp.startDate).getTime();
+      const end = new Date(gp.endDate).getTime();
+      const target = parsedDate.getTime();
+      if (end < target) {
+        dayPosition += Math.floor((end - start) / 86400000) + 1;
+      } else if (start <= target) {
+        dayPosition += Math.floor((target - start) / 86400000);
+        break;
+      }
+    }
+
+    let status: string;
+    let prayers: Record<string, boolean>;
+
+    if (dayPosition < completedDays) {
+      // Fully completed day
+      status = 'complete';
+      prayers = { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true };
+    } else if (dayPosition === completedDays) {
+      // Current day being worked on -- show partial progress
+      prayers = {
+        fajr: fajrDone > completedDays,
+        dhuhr: dhuhrDone > completedDays,
+        asr: asrDone > completedDays,
+        maghrib: maghribDone > completedDays,
+        isha: ishaDone > completedDays,
+      };
+      const doneCount = Object.values(prayers).filter(Boolean).length;
+      status = doneCount === 5 ? 'complete' : doneCount > 0 ? 'partial' : 'missed';
+    } else {
+      // Future gap day -- not started
+      status = 'missed';
+      prayers = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
+    }
+
+    return reply.send({
+      success: true,
+      data: { date, isGapDay: true, status, prayers, position: dayPosition, completedDays },
     });
   });
 

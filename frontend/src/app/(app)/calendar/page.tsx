@@ -101,6 +101,7 @@ export default function CalendarPage() {
 
       <DayDetailModal
         date={selectedDate}
+        calendarDay={selectedDate && days ? days.find((d) => d.date === selectedDate) ?? null : null}
         onClose={() => setSelectedDate(null)}
       />
     </div>

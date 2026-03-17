@@ -21,6 +21,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "gapPeriods": "Gap Periods",
     "daily": "Daily",
     "makeup": "Makeup",
     "calendar": "Calendar",

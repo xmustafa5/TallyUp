@@ -94,10 +94,11 @@ export default async function scheduleRoutes(fastify: FastifyInstance) {
     const weekEnd = new Date(weekStart);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
-    // Count makeup prayers logged today
+    // Count manually completed makeup prayers logged today (exclude DAILY_MISSED)
     const dailyCompleted = await fastify.prisma.makeupLog.count({
       where: {
         userId,
+        source: 'MANUAL',
         completedAt: {
           gte: todayStart,
           lt: tomorrowStart,
@@ -105,10 +106,11 @@ export default async function scheduleRoutes(fastify: FastifyInstance) {
       },
     });
 
-    // Count makeup prayers logged this week (Mon-Sun)
+    // Count manually completed makeup prayers logged this week (Mon-Sun)
     const weeklyCompleted = await fastify.prisma.makeupLog.count({
       where: {
         userId,
+        source: 'MANUAL',
         completedAt: {
           gte: weekStart,
           lt: weekEnd,

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CheckSquare, Home, RotateCcw, Settings, Target } from 'lucide-react';
+import { Calendar, CheckSquare, Clock, Home, RotateCcw, Settings, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { AuthGuard } from '@/components/shared/auth-guard';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 
 const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: Home },
+  { href: '/gap-periods', labelKey: 'gapPeriods', icon: Clock },
   { href: '/daily-tracker', labelKey: 'daily', icon: CheckSquare },
   { href: '/makeup', labelKey: 'makeup', icon: RotateCcw },
   { href: '/calendar', labelKey: 'calendar', icon: Calendar },
