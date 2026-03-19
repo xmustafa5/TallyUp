@@ -28,6 +28,11 @@ function getStatusClasses(status: CalendarDay['status']): string {
   }
 }
 
+function isCurrentDay(year: number, month: number, day: number): boolean {
+  const now = new Date();
+  return now.getFullYear() === year && now.getMonth() + 1 === month && now.getDate() === day;
+}
+
 export function CalendarGrid({ days, year, month, onDayClick }: CalendarGridProps) {
   // month is 1-indexed
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
@@ -85,6 +90,7 @@ export function CalendarGrid({ days, year, month, onDayClick }: CalendarGridProp
           const dayNum = new Date(cell.date + 'T00:00:00').getDate();
           const statusClasses = getStatusClasses(cell.status);
           const isClickable = cell.status !== 'future';
+          const isToday = isCurrentDay(year, month, dayNum);
 
           return (
             <button
@@ -92,9 +98,8 @@ export function CalendarGrid({ days, year, month, onDayClick }: CalendarGridProp
               type="button"
               onClick={() => isClickable && onDayClick(cell.date)}
               disabled={!isClickable}
-              className={`flex aspect-square flex-col items-center justify-center rounded-md transition-colors ${statusClasses} ${
-                isClickable ? 'cursor-pointer' : 'cursor-default'
-              }`}
+              className={`flex aspect-square flex-col items-center justify-center rounded-md transition-colors ${statusClasses} ${isClickable ? 'cursor-pointer' : 'cursor-default'
+                } ${isToday ? 'ring-1 ring-primary ring-offset-1' : ''}`}
             >
               <span className="text-sm font-medium">{dayNum}</span>
               {cell.prayedCount > 0 && (

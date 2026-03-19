@@ -177,6 +177,8 @@ export function calculateCalendarMonth(
     let isFinalized = false;
     let status: CalendarDay['status'];
 
+    const isToday = dateUTC.getTime() === todayUTC.getTime();
+
     if (dateUTC.getTime() > todayUTC.getTime()) {
       // Future date
       status = 'future';
@@ -217,6 +219,9 @@ export function calculateCalendarMonth(
             status = 'complete';
           } else if (prayedCount > 0) {
             status = 'partial';
+          } else if (isToday && !isFinalized) {
+            // Today with no prayers yet -- not missed, still in progress
+            status = 'no-data';
           } else {
             status = 'missed';
           }
@@ -226,6 +231,10 @@ export function calculateCalendarMonth(
         const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
         if (completedMakeupDays > 0 && dayPosition < completedMakeupDays) {
           status = 'complete';
+        } else if (isToday) {
+          // Today in gap period -- not yet missed, still in progress
+          const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
+          status = extraPrayers > 0 ? 'partial' : 'no-data';
         } else if (dayPosition === completedMakeupDays) {
           const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
           status = extraPrayers > 0 ? 'partial' : 'missed';
