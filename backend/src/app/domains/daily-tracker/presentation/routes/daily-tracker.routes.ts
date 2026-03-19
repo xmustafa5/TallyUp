@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import type { PrayerType } from '@prisma/client';
 import { PrismaDailyTrackerRepository } from '../../infrastructure/repositories/prisma-daily-tracker.repository';
 import { getTodayUTC, shouldUpdateStreak } from '../../domain/services/daily-tracker.service';
 import { finalizeTracker } from '../../domain/services/finalization.service';
@@ -12,6 +13,14 @@ import {
 } from '../schemas/daily-tracker.schemas';
 import { CacheService } from '../../../../common/services/cache.service';
 import { CACHE_KEYS } from '../../../../common/constants/cache-keys';
+
+const PRAYER_FIELD_TO_TYPE: Record<string, PrayerType> = {
+  fajr: 'FAJR',
+  dhuhr: 'DHUHR',
+  asr: 'ASR',
+  maghrib: 'MAGHRIB',
+  isha: 'ISHA',
+};
 
 export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
   const repository = new PrismaDailyTrackerRepository(fastify.prisma);
@@ -71,13 +80,48 @@ export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
       return reply.badRequest('Invalid date format');
     }
 
-    // Check if already finalized
-    const existing = await repository.findByUserAndDate(userId, parsedDate);
-    if (existing?.isFinalized) {
-      return reply.badRequest('Cannot update a finalized tracker');
-    }
-
     const tracker = await repository.upsert(userId, parsedDate, body);
+
+    // Sync with makeup logs if this date is in a gap period
+    const gapPeriods = await fastify.prisma.gapPeriod.findMany({
+      where: { userId },
+      select: { startDate: true, endDate: true },
+    });
+    const isInGapPeriod = gapPeriods.some((gp) => {
+      const start = new Date(gp.startDate).getTime();
+      const end = new Date(gp.endDate).getTime();
+      return parsedDate.getTime() >= start && parsedDate.getTime() <= end;
+    });
+
+    if (isInGapPeriod) {
+      for (const [field, value] of Object.entries(body)) {
+        const prayerType = PRAYER_FIELD_TO_TYPE[field];
+        if (!prayerType) continue;
+
+        if (value === true) {
+          // Add makeup log if not exists
+          const exists = await fastify.prisma.makeupLog.findFirst({
+            where: { userId, prayerType, targetDate: parsedDate },
+          });
+          if (!exists) {
+            await fastify.prisma.makeupLog.create({
+              data: { userId, prayerType, source: 'MANUAL', targetDate: parsedDate, completedAt: new Date() },
+            });
+          }
+        } else if (value === false) {
+          // Remove makeup log if exists
+          await fastify.prisma.makeupLog.deleteMany({
+            where: { userId, prayerType, targetDate: parsedDate },
+          });
+        }
+      }
+      // Invalidate makeup caches
+      await cache.invalidateExact(
+        CACHE_KEYS.balance(userId),
+        CACHE_KEYS.makeupStats(userId),
+      );
+      await cache.invalidate(`calendar:${userId}:*`);
+    }
 
     // Update streak if any prayer is marked true
     const hasNewCompletion = Object.values(body).some((v) => v === true);

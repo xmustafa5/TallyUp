@@ -45,7 +45,7 @@ export default function RegisterPage() {
         password: data.password,
       });
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      router.push('/');
+      router.push('/setup');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     }

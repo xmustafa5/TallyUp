@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Calendar, CheckSquare, Loader2, LogOut, RotateCcw, Settings, Target } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { ProgressCircle } from '@/components/dashboard/progress-circle';
@@ -12,6 +13,9 @@ import { useDashboard } from '@/hooks/use-progress';
 import { useTodayProgress } from '@/hooks/use-schedule';
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
+  const tDailyTracker = useTranslations('dailyTracker');
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const { data: dashboard, isLoading, error } = useDashboard();
@@ -23,15 +27,15 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Welcome, {user?.name}
+            {t('welcome', { name: user?.name })}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Track and make up your missed prayers
+            {t('subtitle')}
           </p>
         </div>
         <Button variant="outline" onClick={clearAuth}>
           <LogOut className="mr-1.5 size-4" />
-          Sign out
+          {tCommon('signOut')}
         </Button>
       </div>
 
@@ -43,7 +47,7 @@ export default function DashboardPage() {
 
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
-          Failed to load dashboard data. Please try again.
+          {tCommon('error')}. {tCommon('retry')}.
         </div>
       )}
 
@@ -60,17 +64,17 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">
                   {dashboard.totalRemaining.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">Remaining</p>
+                <p className="text-xs text-muted-foreground">{t('totalRemaining')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold">
                   {dashboard.totalCompleted.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">Completed</p>
+                <p className="text-xs text-muted-foreground">{t('totalCompleted')}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold">{dashboard.recentActivity}</p>
-                <p className="text-xs text-muted-foreground">Last 7 days</p>
+                <p className="text-xs text-muted-foreground">{t('recentActivity')}</p>
               </div>
             </div>
           </div>
@@ -87,7 +91,7 @@ export default function DashboardPage() {
                     <Target className="size-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium">Today&apos;s Goal</h3>
+                    <h3 className="text-sm font-medium">{t('todaysPrayers')}</h3>
                     <p className="text-lg font-bold">
                       {goalProgress.dailyCompleted}/{goalProgress.dailyGoal} today
                     </p>
@@ -110,7 +114,7 @@ export default function DashboardPage() {
 
           {/* Streak */}
           <div className="space-y-2">
-            <h2 className="text-sm font-medium text-muted-foreground">Streak</h2>
+            <h2 className="text-sm font-medium text-muted-foreground">{tDailyTracker('streak')}</h2>
             <StreakDisplay
               currentStreak={dashboard.streak.currentStreak}
               longestStreak={dashboard.streak.longestStreak}
@@ -120,7 +124,7 @@ export default function DashboardPage() {
           {/* Quick Actions */}
           <div className="space-y-2">
             <h2 className="text-sm font-medium text-muted-foreground">
-              Quick Actions
+              {t('quickActions')}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <Link href="/gap-periods" className="block">
@@ -130,9 +134,9 @@ export default function DashboardPage() {
                       <Settings className="size-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Gap Periods</h3>
+                      <h3 className="font-medium">{t('gapPeriods')}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Manage missed periods
+                        {t('gapPeriodsDesc')}
                       </p>
                     </div>
                   </div>
@@ -146,9 +150,9 @@ export default function DashboardPage() {
                       <CheckSquare className="size-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Daily Tracker</h3>
+                      <h3 className="font-medium">{t('dailyTracker')}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Track today&apos;s prayers
+                        {t('dailyTrackerDesc')}
                       </p>
                     </div>
                   </div>
@@ -162,9 +166,9 @@ export default function DashboardPage() {
                       <RotateCcw className="size-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Makeup Prayers</h3>
+                      <h3 className="font-medium">{t('makeupPrayers')}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Log completed makeup
+                        {t('makeupPrayersDesc')}
                       </p>
                     </div>
                   </div>
@@ -178,9 +182,9 @@ export default function DashboardPage() {
                       <Calendar className="size-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-medium">Calendar</h3>
+                      <h3 className="font-medium">{t('calendarView')}</h3>
                       <p className="text-xs text-muted-foreground">
-                        Monthly overview
+                        {t('calendarDesc')}
                       </p>
                     </div>
                   </div>

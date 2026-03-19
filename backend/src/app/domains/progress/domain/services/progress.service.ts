@@ -76,11 +76,6 @@ interface GapPeriodRecord {
   endDate: Date;
 }
 
-interface MergedPeriod {
-  startDate: Date;
-  endDate: Date;
-}
-
 const MILESTONES = [10, 25, 50, 75, 90, 100];
 
 /**
@@ -132,7 +127,8 @@ export function calculateDashboard(
 }
 
 /**
- * Builds a calendar view for a given month, combining daily tracker and makeup log data.
+ * Builds a calendar view for a given month using targetDate-based makeup tracking.
+ * makeupPerDay: Map of date string -> count of qadha prayers logged for that gap day
  */
 export function calculateCalendarMonth(
   dailyTrackers: DailyTrackerRecord[],
@@ -140,9 +136,7 @@ export function calculateCalendarMonth(
   year: number,
   month: number,
   gapPeriods: GapPeriodRecord[] = [],
-  completedMakeupDays: number = 0,
-  allMergedPeriods: MergedPeriod[] = [],
-  completedPerType: Record<string, number> = {},
+  makeupPerDay: Map<string, number> = new Map(),
 ): CalendarDay[] {
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const today = new Date();
@@ -150,18 +144,18 @@ export function calculateCalendarMonth(
     Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
   );
 
-  // Index trackers by date string for fast lookup
+  // Index trackers by date string
   const trackerMap = new Map<string, DailyTrackerRecord>();
   for (const tracker of dailyTrackers) {
     const dateKey = new Date(tracker.date).toISOString().split('T')[0];
     trackerMap.set(dateKey, tracker);
   }
 
-  // Count makeup logs per day
-  const makeupCountMap = new Map<string, number>();
+  // Count makeup logs by completedAt date (for display purposes)
+  const makeupLogCountMap = new Map<string, number>();
   for (const log of makeupLogs) {
     const dateKey = new Date(log.completedAt).toISOString().split('T')[0];
-    makeupCountMap.set(dateKey, (makeupCountMap.get(dateKey) ?? 0) + 1);
+    makeupLogCountMap.set(dateKey, (makeupLogCountMap.get(dateKey) ?? 0) + 1);
   }
 
   const days: CalendarDay[] = [];
@@ -171,73 +165,59 @@ export function calculateCalendarMonth(
     const dateUTC = new Date(Date.UTC(year, month - 1, day));
 
     const tracker = trackerMap.get(dateStr);
-    const makeupCount = makeupCountMap.get(dateStr) ?? 0;
+    const makeupCount = makeupLogCountMap.get(dateStr) ?? 0;
+    const isToday = dateUTC.getTime() === todayUTC.getTime();
 
     let prayedCount = 0;
     let isFinalized = false;
     let status: CalendarDay['status'];
 
-    const isToday = dateUTC.getTime() === todayUTC.getTime();
-
     if (dateUTC.getTime() > todayUTC.getTime()) {
-      // Future date
       status = 'future';
       if (tracker) {
         prayedCount = countPrayers(tracker);
         isFinalized = tracker.isFinalized;
       }
     } else {
-      // Check if this date falls within a gap period
       const isInGapPeriod = gapPeriods.some((gp) => {
         const start = new Date(gp.startDate).getTime();
         const end = new Date(gp.endDate).getTime();
-        const current = dateUTC.getTime();
-        return current >= start && current <= end;
+        return dateUTC.getTime() >= start && dateUTC.getTime() <= end;
       });
 
       if (tracker) {
         prayedCount = countPrayers(tracker);
         isFinalized = tracker.isFinalized;
+      }
 
-        if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
-          // Day has both tracker AND is in gap period -- check makeup status too
-          const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
-          const gapComplete = completedMakeupDays > 0 && dayPosition < completedMakeupDays;
-          const dailyComplete = prayedCount === 5;
-
-          if (gapComplete) {
-            // Gap period day fully made up -- show as complete
-            status = 'complete';
-          } else if (dailyComplete || prayedCount > 0) {
-            status = 'partial';
-          } else {
-            status = 'missed';
-          }
-        } else {
-          // Regular day with tracker (not in gap period)
-          if (prayedCount === 5) {
-            status = 'complete';
-          } else if (prayedCount > 0) {
-            status = 'partial';
-          } else if (isToday && !isFinalized) {
-            // Today with no prayers yet -- not missed, still in progress
-            status = 'no-data';
-          } else {
-            status = 'missed';
-          }
-        }
-      } else if (isInGapPeriod && dateUTC.getTime() <= todayUTC.getTime()) {
-        // No tracker, but in gap period
-        const dayPosition = countGapDaysBefore(allMergedPeriods, dateUTC);
-        if (completedMakeupDays > 0 && dayPosition < completedMakeupDays) {
+      if (isInGapPeriod && !isToday) {
+        // Past gap day -- status based on qadha completion for this specific day
+        const qadhaForDay = makeupPerDay.get(dateStr) ?? 0;
+        if (qadhaForDay >= 5) {
           status = 'complete';
-        } else if (isToday) {
-          // Today in gap period -- not yet missed, still in progress
-          const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
-          status = extraPrayers > 0 ? 'partial' : 'no-data';
-        } else if (dayPosition === completedMakeupDays) {
-          const extraPrayers = Object.values(completedPerType).filter((c) => c > completedMakeupDays).length;
-          status = extraPrayers > 0 ? 'partial' : 'missed';
+        } else if (qadhaForDay > 0) {
+          status = 'partial';
+        } else {
+          status = 'missed';
+        }
+      } else if (isInGapPeriod && isToday) {
+        // Today is in gap period -- check qadha completion too
+        const qadhaForDay = makeupPerDay.get(dateStr) ?? 0;
+        if (qadhaForDay >= 5) {
+          status = 'complete';
+        } else if (qadhaForDay > 0 || prayedCount > 0) {
+          status = 'partial';
+        } else {
+          status = 'no-data';
+        }
+      } else if (tracker) {
+        // Regular day with tracker
+        if (prayedCount === 5) {
+          status = 'complete';
+        } else if (prayedCount > 0) {
+          status = 'partial';
+        } else if (isToday && !isFinalized) {
+          status = 'no-data';
         } else {
           status = 'missed';
         }
@@ -246,13 +226,7 @@ export function calculateCalendarMonth(
       }
     }
 
-    days.push({
-      date: dateStr,
-      prayedCount,
-      makeupCount,
-      isFinalized,
-      status,
-    });
+    days.push({ date: dateStr, prayedCount, makeupCount, isFinalized, status });
   }
 
   return days;
@@ -260,53 +234,17 @@ export function calculateCalendarMonth(
 
 /**
  * Returns a milestone message if the completion percentage is at a milestone threshold.
- * Returns null if not at a milestone.
  */
 export function getMilestone(completionPercentage: number): string | null {
   for (const milestone of MILESTONES) {
     if (completionPercentage >= milestone && completionPercentage < milestone + 1) {
-      if (milestone === 100) {
-        return 'You have completed 100% of your missed prayers!';
-      }
       return `You have completed ${milestone}% of your missed prayers!`;
     }
   }
-
-  // Exact 100% check (completionPercentage === 100)
   if (completionPercentage === 100) {
     return 'You have completed 100% of your missed prayers!';
   }
-
   return null;
-}
-
-const MS_PER_DAY = 86400000;
-
-/**
- * Counts how many gap period days come before a target date (0-indexed).
- * Used to determine if a specific gap day has been "made up" based on
- * the number of completed makeup days (from oldest to newest).
- */
-function countGapDaysBefore(mergedPeriods: MergedPeriod[], targetDate: Date): number {
-  let count = 0;
-  const target = targetDate.getTime();
-
-  for (const gp of mergedPeriods) {
-    const start = new Date(gp.startDate).getTime();
-    const end = new Date(gp.endDate).getTime();
-
-    if (end < target) {
-      // Entire period is before target date
-      count += Math.floor((end - start) / MS_PER_DAY) + 1;
-    } else if (start <= target) {
-      // Target falls within this period -- count days from start to day before target
-      count += Math.floor((target - start) / MS_PER_DAY);
-      break; // No need to check further periods
-    }
-    // If start > target, this period is after target -- skip
-  }
-
-  return count;
 }
 
 function countPrayers(tracker: {

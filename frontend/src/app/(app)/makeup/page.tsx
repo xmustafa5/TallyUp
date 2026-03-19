@@ -1,9 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Loader2, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMakeupHistory, useLogMakeup, useUndoMakeup, useMakeupStats } from '@/hooks/use-makeup';
-import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
+import { PRAYER_TYPES } from '@/constants/prayers';
 import type { PrayerType } from '@/constants/prayers';
 import { useState } from 'react';
 import { useToast } from '@/components/shared/toast';
@@ -22,14 +23,14 @@ function formatDateTime(dateString: string): string {
   });
 }
 
-function getSourceLabel(source: string): string {
+function getSourceLabelKey(source: string): string {
   switch (source) {
     case 'MANUAL':
-      return 'Manual';
+      return 'manual';
     case 'DAILY_MISSED':
-      return 'Daily Missed';
+      return 'dailyMissed';
     case 'GAP_PERIOD':
-      return 'Gap Period';
+      return 'gapPeriod';
     default:
       return source;
   }
@@ -49,6 +50,8 @@ function getSourceStyle(source: string): string {
 }
 
 export default function MakeupPage() {
+  const t = useTranslations('makeup');
+  const tp = useTranslations('prayers');
   const { data: stats, isLoading: statsLoading } = useMakeupStats();
   const { data: history, isLoading: historyLoading, error: historyError } = useMakeupHistory();
   const logMutation = useLogMakeup();
@@ -61,7 +64,7 @@ export default function MakeupPage() {
     setLoggingPrayer(prayerType);
     logMutation.mutate(prayerType, {
       onSuccess: () => {
-        toast({ message: 'Prayer logged', type: 'success' });
+        toast({ message: t('logSuccess'), type: 'success' });
       },
       onError: () => {
         toast({ message: 'Failed to log prayer', type: 'error' });
@@ -75,7 +78,7 @@ export default function MakeupPage() {
     if (confirmed) {
       undoMutation.mutate(id, {
         onSuccess: () => {
-          toast({ message: 'Prayer log undone', type: 'success' });
+          toast({ message: t('undoSuccess'), type: 'success' });
         },
         onError: () => {
           toast({ message: 'Failed to undo prayer log', type: 'error' });
@@ -87,7 +90,7 @@ export default function MakeupPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Makeup Prayers</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Log your completed makeup prayers and track progress
         </p>
@@ -95,7 +98,7 @@ export default function MakeupPage() {
 
       {/* Stats Section */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Progress</h2>
+        <h2 className="text-lg font-semibold">{t('stats')}</h2>
         {statsLoading && (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -115,7 +118,7 @@ export default function MakeupPage() {
                     className="rounded-lg border bg-card p-3 text-center"
                   >
                     <p className="text-xs font-medium text-muted-foreground">
-                      {PRAYER_NAMES[pt].en}
+                      {tp(getPrayerFieldKey(pt))}
                     </p>
                     <p className="mt-1 text-lg font-bold">{stat.completed}</p>
                     <div className="mt-1 h-1.5 w-full rounded-full bg-secondary">
@@ -125,7 +128,7 @@ export default function MakeupPage() {
                       />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {stat.remaining} left
+                      {stat.remaining} {t('remaining')}
                     </p>
                   </div>
                 );
@@ -133,10 +136,10 @@ export default function MakeupPage() {
             </div>
             <div className="flex items-center justify-between rounded-lg border bg-card p-4">
               <p className="text-sm font-medium">
-                Total completed: {stats.totalCompleted.toLocaleString()}
+                {t('completed')}: {stats.totalCompleted.toLocaleString()}
               </p>
               <p className="text-sm text-muted-foreground">
-                Remaining: {stats.totalRemaining.toLocaleString()}
+                {t('remaining')}: {stats.totalRemaining.toLocaleString()}
               </p>
             </div>
           </>
@@ -145,7 +148,7 @@ export default function MakeupPage() {
 
       {/* Quick Log Section */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Quick Log</h2>
+        <h2 className="text-lg font-semibold">{t('quickLog')}</h2>
         <div className="grid grid-cols-5 gap-2">
           {PRAYER_TYPES.map((pt) => (
             <Button
@@ -159,7 +162,7 @@ export default function MakeupPage() {
                 className={`size-4 animate-spin ${loggingPrayer === pt ? '' : 'hidden'}`}
               />
               <span className={loggingPrayer === pt ? 'hidden' : ''}>
-                {PRAYER_NAMES[pt].en}
+                {tp(getPrayerFieldKey(pt))}
               </span>
               <span className={loggingPrayer === pt ? '' : 'hidden'}>
                 Logging...
@@ -171,7 +174,7 @@ export default function MakeupPage() {
 
       {/* History Section */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Recent History</h2>
+        <h2 className="text-lg font-semibold">{t('history')}</h2>
 
         {historyLoading && (
           <div className="flex items-center justify-center py-6">
@@ -203,13 +206,12 @@ export default function MakeupPage() {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium">
-                    {PRAYER_NAMES[entry.prayerType.toUpperCase() as PrayerType]?.en ??
-                      entry.prayerType}
+                    {tp(entry.prayerType.toLowerCase())}
                   </span>
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getSourceStyle(entry.source)}`}
                   >
-                    {getSourceLabel(entry.source)}
+                    {t(getSourceLabelKey(entry.source))}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

@@ -35,6 +35,13 @@ export class PrismaMakeupLogRepository implements MakeupLogRepository {
     return records.map((r) => MakeupLog.fromPrisma(r));
   }
 
+  async findByUserAndTargetDate(userId: string, targetDate: Date): Promise<MakeupLog[]> {
+    const records = await this.prisma.makeupLog.findMany({
+      where: { userId, targetDate },
+    });
+    return records.map((r) => MakeupLog.fromPrisma(r));
+  }
+
   async countByUserId(userId: string): Promise<number> {
     return this.prisma.makeupLog.count({ where: { userId } });
   }

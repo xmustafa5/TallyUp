@@ -113,6 +113,7 @@ model MakeupLog {
   userId      String       @map("user_id") @db.Uuid
   prayerType  PrayerType   @map("prayer_type")
   source      MakeupSource @default(MANUAL)
+  targetDate  DateTime?    @map("target_date") @db.Date
   completedAt DateTime     @map("completed_at") @db.Timestamptz
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
 
@@ -120,6 +121,7 @@ model MakeupLog {
 
   @@index([userId], map: "makeup_logs_user_id_idx")
   @@index([userId, completedAt], map: "makeup_logs_user_completed_idx")
+  @@index([userId, targetDate], map: "makeup_logs_user_target_date_idx")
   @@map("makeup_logs")
 }
 

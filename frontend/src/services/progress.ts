@@ -65,6 +65,7 @@ export interface GapDayDetail {
   } | null;
   position?: number;
   completedDays?: number;
+  isCurrentWorkingDay?: boolean;
 }
 
 export async function getCalendarDayDetail(date: string): Promise<GapDayDetail> {

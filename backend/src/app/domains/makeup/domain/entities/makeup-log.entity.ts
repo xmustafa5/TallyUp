@@ -5,6 +5,7 @@ export interface MakeupLogProps {
   userId: string;
   prayerType: PrayerType;
   source: MakeupSource;
+  targetDate: Date | null;
   completedAt: Date;
   createdAt: Date;
 }
@@ -38,6 +39,10 @@ export class MakeupLog {
 
   get source(): MakeupSource {
     return this.props.source;
+  }
+
+  get targetDate(): Date | null {
+    return this.props.targetDate;
   }
 
   toResponse(): MakeupLogResponse {

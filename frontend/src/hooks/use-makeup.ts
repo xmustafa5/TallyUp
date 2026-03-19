@@ -5,6 +5,7 @@ import {
   getMakeupHistory,
   getMakeupStats,
   logMakeupPrayer,
+  logMakeupForDay,
   undoMakeupPrayer,
 } from '@/services/makeup';
 
@@ -27,6 +28,23 @@ export function useLogMakeup() {
 
   return useMutation({
     mutationFn: (prayerType: string) => logMakeupPrayer(prayerType),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MAKEUP_HISTORY_KEY });
+      queryClient.invalidateQueries({ queryKey: MAKEUP_STATS_KEY });
+      queryClient.invalidateQueries({ queryKey: BALANCE_KEY });
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+      queryClient.invalidateQueries({ queryKey: CALENDAR_KEY });
+      queryClient.invalidateQueries({ queryKey: SCHEDULE_TODAY_KEY });
+    },
+  });
+}
+
+export function useLogMakeupForDay() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ date, prayerType }: { date: string; prayerType: string }) =>
+      logMakeupForDay(date, prayerType),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MAKEUP_HISTORY_KEY });
       queryClient.invalidateQueries({ queryKey: MAKEUP_STATS_KEY });

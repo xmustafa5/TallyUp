@@ -17,6 +17,8 @@ export async function finalizeTracker(
   const missedPrayers = tracker.getMissedPrayers();
 
   // Create MakeupLog entries for missed prayers
+  // These are added to the gap balance, NOT to targetDate-tracked qadha
+  // (DAILY_MISSED prayers increase the debt, they are NOT completed qadha)
   if (missedPrayers.length > 0) {
     await prisma.makeupLog.createMany({
       data: missedPrayers.map((prayerType) => ({

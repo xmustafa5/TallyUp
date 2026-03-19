@@ -10,7 +10,8 @@ export function logMakeupPrayer(data: {
   userId: string;
   prayerType: PrayerType;
   source?: MakeupSource;
-}): { userId: string; prayerType: PrayerType; source: MakeupSource; completedAt: Date } {
+  targetDate?: Date;
+}): { userId: string; prayerType: PrayerType; source: MakeupSource; targetDate?: Date; completedAt: Date } {
   if (!VALID_PRAYER_TYPES.includes(data.prayerType)) {
     throw new Error(`Invalid prayer type: ${data.prayerType}`);
   }
@@ -19,6 +20,7 @@ export function logMakeupPrayer(data: {
     userId: data.userId,
     prayerType: data.prayerType,
     source: data.source ?? 'MANUAL',
+    targetDate: data.targetDate,
     completedAt: new Date(),
   };
 }

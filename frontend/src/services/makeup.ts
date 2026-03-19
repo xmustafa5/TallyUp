@@ -37,6 +37,11 @@ export async function logMakeupPrayer(prayerType: string): Promise<MakeupLogEntr
   return data.data;
 }
 
+export async function logMakeupForDay(date: string, prayerType: string): Promise<MakeupLogEntry> {
+  const { data } = await api.post<ApiResponse<MakeupLogEntry>>(`/makeup/day/${date}`, { prayerType });
+  return data.data;
+}
+
 export async function undoMakeupPrayer(id: string): Promise<void> {
   await api.delete(`/makeup/${id}`);
 }

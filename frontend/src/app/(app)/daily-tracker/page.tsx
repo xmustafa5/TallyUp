@@ -1,11 +1,11 @@
 'use client';
 
-import { Loader2, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useTranslations } from 'next-intl';
+import { Loader2 } from 'lucide-react';
 import { PrayerCard } from '@/components/prayer-tracking/prayer-card';
 import { StreakDisplay } from '@/components/prayer-tracking/streak-display';
-import { useTodayTracker, useMarkPrayers, useFinalizeDay, useWeekTrackers, useStreak } from '@/hooks/use-daily-tracker';
-import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
+import { useTodayTracker, useMarkPrayers, useWeekTrackers, useStreak } from '@/hooks/use-daily-tracker';
+import { PRAYER_TYPES } from '@/constants/prayers';
 import type { PrayerType } from '@/constants/prayers';
 import { useState } from 'react';
 import { useToast } from '@/components/shared/toast';
@@ -32,11 +32,12 @@ function getPrayerFieldKey(pt: PrayerType): 'fajr' | 'dhuhr' | 'asr' | 'maghrib'
 }
 
 export default function DailyTrackerPage() {
+  const t = useTranslations('dailyTracker');
+  const tp = useTranslations('prayers');
   const { data: today, isLoading: todayLoading, error: todayError } = useTodayTracker();
   const { data: weekData, isLoading: weekLoading } = useWeekTrackers();
   const { data: streakData, isLoading: streakLoading } = useStreak();
   const markMutation = useMarkPrayers();
-  const finalizeMutation = useFinalizeDay();
 
   const [pendingPrayer, setPendingPrayer] = useState<string | null>(null);
   const { toast } = useToast();
@@ -57,23 +58,6 @@ export default function DailyTrackerPage() {
     );
   }
 
-  function handleFinalize() {
-    if (!today) return;
-    const confirmed = window.confirm(
-      'Are you sure you want to finalize today? Missed prayers will be added to your makeup balance. This cannot be undone.',
-    );
-    if (confirmed) {
-      finalizeMutation.mutate(today.date, {
-        onSuccess: () => {
-          toast({ message: 'Day finalized', type: 'success' });
-        },
-        onError: () => {
-          toast({ message: 'Failed to finalize day', type: 'error' });
-        },
-      });
-    }
-  }
-
   const completedCount = today
     ? PRAYER_TYPES.filter((pt) => today[getPrayerFieldKey(pt)]).length
     : 0;
@@ -81,7 +65,7 @@ export default function DailyTrackerPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Today&apos;s Prayers</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
         {today && (
           <p className="mt-1 text-sm text-muted-foreground">
             {formatDisplayDate(today.date)}
@@ -107,9 +91,9 @@ export default function DailyTrackerPage() {
             {PRAYER_TYPES.map((pt) => (
               <PrayerCard
                 key={pt}
-                name={PRAYER_NAMES[pt].en}
+                name={tp(getPrayerFieldKey(pt))}
                 completed={today[getPrayerFieldKey(pt)]}
-                disabled={today.isFinalized}
+                disabled={false}
                 onToggle={() => handleToggle(pt)}
                 isPending={pendingPrayer === pt}
               />
@@ -118,35 +102,15 @@ export default function DailyTrackerPage() {
 
           <div className="flex items-center justify-between rounded-lg border bg-card p-4">
             <p className="text-sm font-medium">
-              {completedCount} of 5 prayers completed
+              {t('completed', { count: completedCount })}
             </p>
-            {today.isFinalized && (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="size-3.5" />
-                Finalized
-              </span>
-            )}
           </div>
-
-          {!today.isFinalized && (
-            <Button
-              variant="outline"
-              onClick={handleFinalize}
-              disabled={finalizeMutation.isPending}
-              className="w-full"
-            >
-              <Loader2
-                className={`mr-2 size-4 animate-spin ${finalizeMutation.isPending ? '' : 'hidden'}`}
-              />
-              Finalize Day
-            </Button>
-          )}
         </>
       )}
 
       {/* Weekly View */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">This Week</h2>
+        <h2 className="text-lg font-semibold">{t('weeklyView')}</h2>
         {weekLoading && (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -186,7 +150,7 @@ export default function DailyTrackerPage() {
 
       {/* Streak */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Streak</h2>
+        <h2 className="text-lg font-semibold">{t('streak')}</h2>
         {streakLoading && (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
