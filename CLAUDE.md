@@ -1,9 +1,10 @@
 # Qatha
 
-Monorepo with Fastify backend + Next.js frontend.
+Monorepo with Fastify backend + Next.js frontend + React Native mobile app.
 
 **Backend:** Fastify 5 | TypeScript | Prisma | PostgreSQL | BullMQ | Redis | Docker | pnpm
 **Frontend:** Next.js 16 | React 19 | TypeScript | Tailwind CSS | shadcn/ui | pnpm
+**Mobile:** React Native 0.83.2 | Expo SDK 55 | TypeScript | Expo Router 55 | Reanimated 4.2.1
 
 ## Core Principles
 
@@ -37,7 +38,7 @@ This applies to: Fastify plugins, Prisma, BullMQ, TypeBox, ioredis, Next.js, Tan
 
 ### Package Installation
 
-**NEVER manually edit package.json.** Use `pnpm add <package>` commands only.
+**NEVER manually edit package.json.** Use `pnpm add <package>` (backend/frontend) or `npx expo install <package>` (mobile) commands only.
 
 ## Commands
 
@@ -62,6 +63,14 @@ pnpm install          # Install dependencies
 pnpm dev              # Start Next.js dev server (localhost:3000)
 pnpm build            # Build frontend
 pnpm lint             # Run ESLint
+```
+
+### Mobile (from `mobile/`)
+
+```bash
+npx expo start            # Start dev server (use Expo Go first)
+npx expo start --ios      # iOS
+npx expo start --android  # Android
 ```
 
 ### Docker
@@ -250,3 +259,89 @@ Enterprise-grade reference guides in `docs/best-practices/`:
 - `swagger.md` -- OpenAPI setup, route docs, TypeBox schemas, tags, security schemes, response conventions
 - `postgresql.md` -- Indexing (B-tree/GIN/GiST/BRIN), query optimization, connection pooling, transactions
 - `typebox.md` -- Type provider, schema composition, Optional vs Nullable, validation constraints
+
+## Mobile App (mobile/) - React Native Expo
+
+### Project Structure
+
+```
+app/
+├── _layout.tsx          # Root layout (Stack + ThemeProvider)
+├── +not-found.tsx       # 404 screen
+├── modal.tsx            # Modal screen
+└── (tabs)/
+    ├── _layout.tsx      # Tab navigator
+    ├── index.tsx        # Tab One
+    └── two.tsx          # Tab Two
+components/              # Reusable components (NOT in app/)
+constants/Colors.ts      # Theme colors (light/dark)
+assets/                  # Fonts, images
+```
+
+### Mobile Code Conventions
+
+**Files & Imports:**
+- kebab-case for file names: `auth-wizard.tsx`
+- Use `@/` path alias for imports
+- Never co-locate components/utils in the `app/` directory
+
+**TypeScript:** Strict mode, interfaces over types, avoid enums (use maps), functional components with named exports
+
+**Styling:**
+- Inline styles only -- NOT `StyleSheet.create`
+- Use `{ borderCurve: 'continuous' }` for rounded corners
+- Use `boxShadow` (not legacy shadow/elevation props)
+- Use `useWindowDimensions` over `Dimensions.get()`
+- Prefer flex gap over margin/padding
+
+**Navigation:**
+- File-based routing via Expo Router
+- Use `<Link href="/path" />` for navigation
+- Set page titles via `<Stack.Screen options={{ title: "..." }} />`
+- Present modals with `presentation: 'modal'` in Stack options
+
+**Components:**
+- Use `react-native-safe-area-context` (not RN SafeAreaView)
+- Use `<ScrollView contentInsetAdjustmentBehavior="automatic" />` instead of SafeAreaView
+- Use `process.env.EXPO_OS` not `Platform.OS`
+- Use `<Icon>` from `@/components/ui/icon` (wraps Ionicons) for all icons
+- Use `expo-image` for actual images only (photos, logos)
+
+**Animations:**
+- Always use `react-native-reanimated` (never `Animated` from react-native)
+- `useSharedValue` + `useAnimatedStyle` for animated values
+- `withSpring` / `withTiming` for animation drivers
+- `FadeIn` / `FadeOut` for entering/exiting animations
+
+**Data & State:**
+- Minimize `useState`/`useEffect` -- prefer Context + reducers
+- Use `React.use` not `React.useContext`
+- For API calls: `@tanstack/react-query` + `axios`
+
+**UX:**
+- Use `expo-haptics` conditionally on iOS
+- Add `selectable` prop to `<Text>` displaying copyable data
+- Use `{ fontVariant: 'tabular-nums' }` for counters
+- Format large numbers (1.4M, 38k)
+- Add entering/exiting animations for state changes
+
+### Mobile Libraries
+
+| Need | Package |
+|------|---------|
+| Forms | `react-hook-form` |
+| HTTP client | `axios` |
+| Server state / caching | `@tanstack/react-query` |
+| Runtime validation | `zod` |
+| Global state | `zustand` |
+| Image optimization | `expo-image` |
+| Haptics | `expo-haptics` |
+
+### Mobile Don'ts
+
+- Don't use `Animated` from react-native -- use Reanimated
+- Don't use `StyleSheet.create` -- use inline styles
+- Don't use legacy `expo-permissions`
+- Don't use `expo-av` -- use `expo-audio` / `expo-video`
+- Don't use `fetch` + `useState` for data -- use TanStack Query
+- Don't use `div`, `img` or other intrinsic HTML elements
