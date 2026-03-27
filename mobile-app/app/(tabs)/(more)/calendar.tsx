@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { format, getDaysInMonth, getDay, parseISO } from 'date-fns';
-import { useCalendarMonth } from '@/hooks/use-progress';
+import { useCalendarMonth, useCalendarDayDetail } from '@/hooks/use-progress';
+import { useDateTracker, useMarkPrayers } from '@/hooks/use-daily-tracker';
+import { useLogMakeupForDay } from '@/hooks/use-makeup';
+import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
 import { colors } from '@/constants/theme';
+import { lightImpact, successNotification } from '@/lib/haptics';
 import type { CalendarDay } from '@/services/progress';
+import type { MarkPrayersPayload } from '@/services/daily-tracker';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -13,10 +18,12 @@ function CalendarGrid({
   year,
   month,
   days,
+  onDayPress,
 }: {
   year: number;
   month: number;
   days: CalendarDay[];
+  onDayPress: (date: string) => void;
 }) {
   const theme = colors.light;
   const daysInMonth = getDaysInMonth(new Date(year, month - 1));
@@ -68,16 +75,23 @@ function CalendarGrid({
 
           const dayNum = parseISO(cell.date).getDate();
           const isToday = cell.date === todayStr;
+          const isFuture = cell.status === 'future';
 
           return (
-            <View
+            <Pressable
               key={cell.date}
-              style={{
+              disabled={isFuture}
+              onPress={() => {
+                lightImpact();
+                onDayPress(cell.date);
+              }}
+              style={({ pressed }) => ({
                 width: '14.28%',
                 height: 44,
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
+                opacity: pressed ? 0.6 : isFuture ? 0.3 : 1,
+              })}
             >
               <View
                 style={{
@@ -112,11 +126,252 @@ function CalendarGrid({
                   }}
                 />
               )}
-            </View>
+            </Pressable>
           );
         })}
       </View>
     </View>
+  );
+}
+
+function DayDetailDrawer({
+  date,
+  onClose,
+}: {
+  date: string;
+  onClose: () => void;
+}) {
+  const theme = colors.light;
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const isToday = date === todayStr;
+
+  const { data: dayDetail, isLoading: detailLoading } = useCalendarDayDetail(date);
+  const { data: tracker, isLoading: trackerLoading } = useDateTracker(
+    dayDetail && !dayDetail.isGapDay ? date : '',
+  );
+  const markPrayers = useMarkPrayers();
+  const logMakeupForDay = useLogMakeupForDay();
+
+  const handleTogglePrayer = useCallback(
+    (prayerType: string) => {
+      if (!tracker) return;
+      const key = prayerType.toLowerCase() as keyof typeof tracker;
+      const current = tracker[key] as boolean;
+      const prayers: MarkPrayersPayload = { [key]: !current };
+      markPrayers.mutate({ date, prayers });
+    },
+    [tracker, date],
+  );
+
+  const handleLogMakeup = useCallback(
+    (prayerType: string) => {
+      successNotification();
+      logMakeupForDay.mutate({ date, prayerType });
+    },
+    [date],
+  );
+
+  const isLoading = detailLoading || trackerLoading;
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'complete':
+        return { label: 'Fully made up', bg: theme.successLight, color: theme.success };
+      case 'partial':
+        return { label: 'In progress', bg: theme.warningLight, color: theme.warning };
+      default:
+        return { label: 'Not yet made up', bg: theme.errorLight, color: theme.error };
+    }
+  };
+
+  return (
+    <Modal
+      visible
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <Pressable
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+        onPress={onClose}
+      />
+      <View
+        style={{
+          backgroundColor: theme.background,
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 40,
+          maxHeight: '70%',
+        }}
+      >
+        <View style={{ alignItems: 'center', marginBottom: 12 }}>
+          <View
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: theme.border,
+            }}
+          />
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
+            {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+          </Text>
+          <Pressable onPress={onClose} style={{ padding: 4 }}>
+            <Ionicons name="close" size={22} color={theme.textTertiary} />
+          </Pressable>
+        </View>
+
+        {isLoading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        ) : dayDetail?.isGapDay ? (
+          <ScrollView style={{ gap: 12 }} showsVerticalScrollIndicator={false}>
+            <View style={{ marginBottom: 12 }}>
+              {(() => {
+                const badge = statusBadge(dayDetail.status);
+                return (
+                  <View
+                    style={{
+                      alignSelf: 'flex-start',
+                      backgroundColor: badge.bg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: badge.color }}>
+                      {badge.label}
+                    </Text>
+                  </View>
+                );
+              })()}
+            </View>
+
+            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+              Qadha Prayers
+            </Text>
+            <View style={{ gap: 8 }}>
+              {PRAYER_TYPES.map((type) => {
+                const key = type.toLowerCase() as keyof NonNullable<typeof dayDetail.prayers>;
+                const completed = dayDetail.prayers ? dayDetail.prayers[key] : false;
+                const isLogging =
+                  logMakeupForDay.isPending &&
+                  logMakeupForDay.variables?.prayerType === type;
+
+                return (
+                  <Pressable
+                    key={type}
+                    disabled={completed || isLogging}
+                    onPress={() => handleLogMakeup(type)}
+                    style={({ pressed }) => ({
+                      backgroundColor: completed ? theme.successLight : theme.card,
+                      borderRadius: 12,
+                      padding: 14,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      opacity: pressed ? 0.7 : 1,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                    })}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: '500',
+                        color: completed ? theme.success : theme.text,
+                      }}
+                    >
+                      {PRAYER_NAMES[type].en}
+                    </Text>
+                    {isLogging ? (
+                      <ActivityIndicator size="small" color={theme.primary} />
+                    ) : completed ? (
+                      <Ionicons name="checkmark-circle" size={22} color={theme.success} />
+                    ) : (
+                      <Text style={{ fontSize: 12, color: theme.primary, fontWeight: '500' }}>
+                        Tap to log
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        ) : tracker ? (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
+              Daily Prayers
+            </Text>
+            <View style={{ gap: 8 }}>
+              {PRAYER_TYPES.map((type) => {
+                const key = type.toLowerCase() as keyof typeof tracker;
+                const completed = tracker[key] as boolean;
+                const isToggling =
+                  markPrayers.isPending &&
+                  markPrayers.variables?.prayers &&
+                  key in markPrayers.variables.prayers;
+
+                return (
+                  <Pressable
+                    key={type}
+                    onPress={() => handleTogglePrayer(type)}
+                    disabled={isToggling}
+                    style={({ pressed }) => ({
+                      backgroundColor: completed ? theme.successLight : theme.card,
+                      borderRadius: 12,
+                      padding: 14,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      opacity: pressed ? 0.7 : 1,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                    })}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: '500',
+                        color: completed ? theme.success : theme.text,
+                      }}
+                    >
+                      {PRAYER_NAMES[type].en}
+                    </Text>
+                    {isToggling ? (
+                      <ActivityIndicator size="small" color={theme.primary} />
+                    ) : (
+                      <Ionicons
+                        name={completed ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={22}
+                        color={completed ? theme.success : theme.textTertiary}
+                      />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={{ paddingVertical: 30, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: theme.textSecondary }}>
+              No tracking data for this date.
+            </Text>
+          </View>
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -125,6 +380,7 @@ export default function CalendarScreen() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { data: calendarDays } = useCalendarMonth(year, month);
 
@@ -168,6 +424,7 @@ export default function CalendarScreen() {
             year={year}
             month={month}
             days={calendarDays ?? []}
+            onDayPress={setSelectedDate}
           />
         </View>
 
@@ -191,6 +448,13 @@ export default function CalendarScreen() {
           ))}
         </View>
       </ScrollView>
+
+      {selectedDate && (
+        <DayDetailDrawer
+          date={selectedDate}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </>
   );
 }
