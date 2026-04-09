@@ -21,6 +21,9 @@ node_modules
 coverage
 test-output
 
+# SSL certificates
+certs/
+
 # OS files
 .DS_Store
 Thumbs.db

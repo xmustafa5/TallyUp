@@ -27,7 +27,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            {t('welcome', { name: user?.name })}
+            {t('welcome', { name: user?.name ?? '' })}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t('subtitle')}

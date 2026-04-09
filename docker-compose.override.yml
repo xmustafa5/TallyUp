@@ -1,0 +1,28 @@
+# Dev overrides - auto-loaded by Docker Compose locally
+# On the server, this file is gitignored so only the base (prod) config runs
+services:
+  app:
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/src
+          target: /app/src
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./backend/package.json
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args: []
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public

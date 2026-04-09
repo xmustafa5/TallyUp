@@ -21,37 +21,24 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    volumes:
-      - ./backend/src:/app/src
-      - ./backend/prisma:/app/prisma
-    develop:
-      watch:
-        - action: sync
-          path: ./backend/src
-          target: /app/src
-          ignore:
-            - node_modules/
-        - action: rebuild
-          path: ./backend/package.json
     networks:
       - fastify-template-network
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: fastify-template-frontend
     ports:
       - '3001:3001'
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     restart: unless-stopped
     depends_on:
       - app
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
     networks:
       - fastify-template-network
 
