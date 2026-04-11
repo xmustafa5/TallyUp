@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { format as dfFormat } from 'date-fns';
+import { arWeekday } from '@/lib/arabic-date';
 import {
   useTodayTracker,
   useMarkPrayers,
@@ -68,7 +69,7 @@ export default function DailyTrackerScreen() {
         >
           <View>
             <Text style={[typography.caption, { color: theme.textSecondary }]}>
-              {dfFormat(new Date(), 'EEEE')}
+              {arWeekday(new Date())}
             </Text>
             <Text style={[typography.h2, { color: theme.text }]}>
               صلوات اليوم

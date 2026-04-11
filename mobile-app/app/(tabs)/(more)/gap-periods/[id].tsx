@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { format, parseISO, isValid, parse } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useGapPeriods, useUpdateGapPeriod } from '@/hooks/use-gap-periods';
 import { Button } from '@/components/ui/button';
-import { TextInput } from '@/components/ui/text-input';
-import { colors } from '@/constants/theme';
+import { DateField } from '@/components/ui/date-field';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 
 export default function EditGapPeriodScreen() {
   const theme = colors.light;
@@ -15,32 +15,24 @@ export default function EditGapPeriodScreen() {
 
   const period = periods?.find((p) => p.id === id);
 
-  const [startDateText, setStartDateText] = useState('');
-  const [endDateText, setEndDateText] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (period) {
-      setStartDateText(format(parseISO(period.startDate), 'yyyy-MM-dd'));
-      setEndDateText(format(parseISO(period.endDate), 'yyyy-MM-dd'));
+      setStartDate(parseISO(period.startDate));
+      setEndDate(parseISO(period.endDate));
     }
   }, [period]);
 
   const onSubmit = async () => {
     if (!id) return;
-
-    const parsedStart = parse(startDateText, 'yyyy-MM-dd', new Date());
-    const parsedEnd = parse(endDateText, 'yyyy-MM-dd', new Date());
-
-    if (!isValid(parsedStart)) {
-      Alert.alert('Error', 'Start date must be in YYYY-MM-DD format.');
+    if (!startDate || !endDate) {
+      Alert.alert('تنبيه', 'يرجى اختيار تاريخي البداية والنهاية.');
       return;
     }
-    if (!isValid(parsedEnd)) {
-      Alert.alert('Error', 'End date must be in YYYY-MM-DD format.');
-      return;
-    }
-    if (parsedStart > parsedEnd) {
-      Alert.alert('Error', 'Start date must be before end date.');
+    if (startDate > endDate) {
+      Alert.alert('خطأ', 'تاريخ البداية يجب أن يسبق تاريخ النهاية.');
       return;
     }
 
@@ -48,63 +40,86 @@ export default function EditGapPeriodScreen() {
       await updateGapPeriod.mutateAsync({
         id,
         payload: {
-          startDate: startDateText,
-          endDate: endDateText,
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
         },
       });
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to update.');
+      Alert.alert(
+        'خطأ',
+        error?.response?.data?.message || 'تعذّر الحفظ.',
+      );
     }
   };
 
   if (!period) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: theme.textSecondary }}>Loading...</Text>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.background,
+        }}
+      >
+        <Text style={{ color: theme.textSecondary }}>جارِ التحميل...</Text>
       </View>
     );
   }
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Edit Gap Period' }} />
+      <Stack.Screen options={{ title: 'تعديل الفترة' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 20 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps="handled"
       >
         <View
           style={{
             backgroundColor: theme.primaryLight,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: radii.pill,
             borderCurve: 'continuous',
             alignSelf: 'flex-start',
           }}
         >
-          <Text style={{ fontSize: 12, fontWeight: '500', color: theme.primary }}>
-            {period.inputMethod === 'DATE_RANGE' ? 'Date Range' : 'Age Range'}
+          <Text
+            style={{
+              ...typography.caption,
+              fontWeight: '700',
+              color: theme.primary,
+            }}
+          >
+            {period.inputMethod === 'DATE_RANGE' ? 'بالتاريخ' : 'بالعمر'}
           </Text>
         </View>
 
-        <View style={{ gap: 16 }}>
-          <TextInput
-            label="Start Date"
-            placeholder="YYYY-MM-DD"
-            value={startDateText}
-            onChangeText={setStartDateText}
+        <View style={{ gap: spacing.lg }}>
+          <DateField
+            label="تاريخ البداية"
+            value={startDate}
+            onChange={setStartDate}
+            maximumDate={new Date()}
           />
-          <TextInput
-            label="End Date"
-            placeholder="YYYY-MM-DD"
-            value={endDateText}
-            onChangeText={setEndDateText}
+          <DateField
+            label="تاريخ النهاية"
+            value={endDate}
+            onChange={setEndDate}
+            maximumDate={new Date()}
+            minimumDate={startDate ?? undefined}
           />
         </View>
 
-        <Button title="Save Changes" onPress={onSubmit} loading={updateGapPeriod.isPending} />
+        <Button
+          title="حفظ التغييرات"
+          onPress={onSubmit}
+          loading={updateGapPeriod.isPending}
+          fullWidth
+        />
       </ScrollView>
     </>
   );

@@ -1,7 +1,9 @@
 import { ScrollView, View, Text } from 'react-native';
-import { format as dfFormat, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import type { DailyTrackerData } from '@/services/daily-tracker';
 import { colors, format, radii, typography } from '@/constants/theme';
+
+const AR_WEEKDAYS_SHORT = ['أحد', 'اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'];
 
 interface WeeklyStripProps {
   weekData: DailyTrackerData[];
@@ -52,7 +54,7 @@ export function WeeklyStrip({ weekData, today }: WeeklyStripProps) {
                 color: theme.textSecondary,
               }}
             >
-              {dfFormat(parseISO(day.date), 'EEE')}
+              {AR_WEEKDAYS_SHORT[parseISO(day.date).getDay()]}
             </Text>
             <View
               style={{

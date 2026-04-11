@@ -4,8 +4,10 @@ import { Stack, router } from 'expo-router';
 import { changePassword } from '@/services/settings';
 import { TextInput } from '@/components/ui/text-input';
 import { Button } from '@/components/ui/button';
+import { colors, spacing } from '@/constants/theme';
 
 export default function ChangePasswordScreen() {
+  const theme = colors.light;
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -13,21 +15,24 @@ export default function ChangePasswordScreen() {
 
   const handleSubmit = async () => {
     if (newPassword.length < 8) {
-      Alert.alert('Error', 'New password must be at least 8 characters.');
+      Alert.alert('خطأ', 'كلمة المرور الجديدة يجب أن تكون ٨ أحرف على الأقل.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
+      Alert.alert('خطأ', 'كلمتا المرور غير متطابقتين.');
       return;
     }
     setLoading(true);
     try {
       await changePassword(currentPassword, newPassword);
-      Alert.alert('Success', 'Password changed successfully.', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert('تم بنجاح', 'تم تغيير كلمة المرور.', [
+        { text: 'حسنًا', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to change password.');
+      Alert.alert(
+        'خطأ',
+        error?.response?.data?.message || 'تعذّر تغيير كلمة المرور.',
+      );
     } finally {
       setLoading(false);
     }
@@ -35,37 +40,39 @@ export default function ChangePasswordScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Change Password' }} />
+      <Stack.Screen options={{ title: 'تغيير كلمة المرور' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 16 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
         <TextInput
-          label="Current Password"
+          label="كلمة المرور الحالية"
           value={currentPassword}
           onChangeText={setCurrentPassword}
           secureTextEntry
-          placeholder="Enter current password"
+          placeholder="••••••••"
         />
         <TextInput
-          label="New Password"
+          label="كلمة المرور الجديدة"
           value={newPassword}
           onChangeText={setNewPassword}
           secureTextEntry
-          placeholder="At least 8 characters"
+          placeholder="٨ أحرف على الأقل"
         />
         <TextInput
-          label="Confirm New Password"
+          label="تأكيد كلمة المرور الجديدة"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
-          placeholder="Repeat new password"
+          placeholder="أعد كتابة كلمة المرور"
         />
         <Button
-          title="Change Password"
+          title="تغيير كلمة المرور"
           onPress={handleSubmit}
           loading={loading}
+          fullWidth
         />
       </ScrollView>
     </>

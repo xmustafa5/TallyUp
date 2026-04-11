@@ -1,10 +1,16 @@
 import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
-import { useGapPeriods, useDeleteGapPeriod, useCalculation } from '@/hooks/use-gap-periods';
+import { parseISO } from 'date-fns';
+import {
+  useGapPeriods,
+  useDeleteGapPeriod,
+  useCalculation,
+} from '@/hooks/use-gap-periods';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { arFullDate } from '@/lib/arabic-date';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
 
 export default function GapPeriodsScreen() {
   const theme = colors.light;
@@ -13,10 +19,10 @@ export default function GapPeriodsScreen() {
   const deletePeriod = useDeleteGapPeriod();
 
   const handleDelete = (id: string) => {
-    Alert.alert('Delete Gap Period', 'Are you sure you want to delete this gap period?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('حذف الفترة', 'هل أنت متأكد من حذف هذه الفترة؟', [
+      { text: 'إلغاء', style: 'cancel' },
       {
-        text: 'Delete',
+        text: 'حذف',
         style: 'destructive',
         onPress: () => deletePeriod.mutate(id),
       },
@@ -27,161 +33,185 @@ export default function GapPeriodsScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Gap Periods',
+          title: 'فترات الانقطاع',
           headerRight: () => (
             <Pressable
               onPress={() => router.push('/(tabs)/(more)/gap-periods/create')}
               style={{ padding: 4 }}
             >
-              <Ionicons name="add-circle" size={26} color={theme.primary} />
+              <Ionicons name="add-circle" size={28} color={theme.primary} />
             </Pressable>
           ),
         }}
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: theme.background }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={theme.primary}
+          />
         }
         contentContainerStyle={{
-          padding: 20,
-          gap: 16,
-          paddingBottom: 40,
+          padding: spacing.xl,
+          gap: spacing.lg,
+          paddingBottom: spacing['4xl'],
         }}
       >
         {(!periods || periods.length === 0) && !isLoading && (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 32,
-              alignItems: 'center',
-              gap: 12,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Ionicons name="time-outline" size={48} color={theme.textTertiary} />
-            <Text style={{ fontSize: 16, fontWeight: '500', color: theme.text }}>
-              No Gap Periods Yet
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: theme.textSecondary,
-                textAlign: 'center',
-              }}
-            >
-              Add the time periods when you were not praying regularly.
-            </Text>
-            <Button
-              title="Add Your First Period"
-              onPress={() => router.push('/(tabs)/(more)/gap-periods/create')}
-            />
-          </View>
+          <BrandCard padding={32}>
+            <View style={{ alignItems: 'center', gap: spacing.md }}>
+              <Ionicons
+                name="time-outline"
+                size={48}
+                color={theme.textTertiary}
+              />
+              <Text style={[typography.h3, { color: theme.text }]}>
+                لا توجد فترات بعد
+              </Text>
+              <Text
+                style={{
+                  ...typography.body,
+                  color: theme.textSecondary,
+                  textAlign: 'center',
+                }}
+              >
+                أضف الفترات الزمنية التي انقطعت فيها عن الصلاة.
+              </Text>
+              <Button
+                title="أضف أول فترة"
+                onPress={() => router.push('/(tabs)/(more)/gap-periods/create')}
+              />
+            </View>
+          </BrandCard>
         )}
 
-        {periods?.map((period, index) => (
-          <View
-            key={period.id}
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 14,
-              borderCurve: 'continuous',
-              padding: 16,
-              gap: 8,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-            }}
-          >
+        {periods?.map((period) => (
+          <BrandCard key={period.id} padding={16}>
             <View
               style={{
-                flexDirection: 'row',
+                flexDirection: 'row-reverse',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
-                  {format(parseISO(period.startDate), 'MMM d, yyyy')} -{' '}
-                  {format(parseISO(period.endDate), 'MMM d, yyyy')}
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text
+                  style={{
+                    ...typography.body,
+                    fontWeight: '700',
+                    color: theme.text,
+                    textAlign: 'right',
+                  }}
+                >
+                  {arFullDate(parseISO(period.startDate))} —{' '}
+                  {arFullDate(parseISO(period.endDate))}
                 </Text>
-                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <View
+                  style={{
+                    flexDirection: 'row-reverse',
+                    gap: spacing.sm,
+                    alignItems: 'center',
+                  }}
+                >
                   <View
                     style={{
                       backgroundColor: theme.primaryLight,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: radii.sm,
                       borderCurve: 'continuous',
                     }}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: '500', color: theme.primary }}>
-                      {period.inputMethod === 'DATE_RANGE' ? 'Date Range' : 'Age Range'}
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: theme.primary,
+                      }}
+                    >
+                      {period.inputMethod === 'DATE_RANGE'
+                        ? 'بالتاريخ'
+                        : 'بالعمر'}
                     </Text>
                   </View>
                   <Text
                     style={{
-                      fontSize: 13,
+                      ...typography.caption,
                       color: theme.textSecondary,
                       fontVariant: ['tabular-nums'],
                     }}
                   >
-                    {period.totalDays.toLocaleString()} days
+                    {format.toArabicDigits(period.totalDays)} يوم
                   </Text>
                   <Text
                     style={{
-                      fontSize: 13,
+                      ...typography.caption,
                       color: theme.textSecondary,
                       fontVariant: ['tabular-nums'],
                     }}
                   >
-                    {period.totalPrayers.toLocaleString()} prayers
+                    {format.toArabicDigits(period.totalPrayers)} صلاة
                   </Text>
                 </View>
               </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 4 }}>
                 <Pressable
                   onPress={() =>
-                    router.push(`/(tabs)/(more)/gap-periods/${period.id}` as any)
+                    router.push(
+                      `/(tabs)/(more)/gap-periods/${period.id}` as any,
+                    )
                   }
-                  style={{ padding: 6 }}
+                  style={{ padding: 8 }}
                 >
-                  <Ionicons name="pencil" size={18} color={theme.textSecondary} />
+                  <Ionicons
+                    name="pencil"
+                    size={18}
+                    color={theme.textSecondary}
+                  />
                 </Pressable>
                 <Pressable
                   onPress={() => handleDelete(period.id)}
-                  style={{ padding: 6 }}
+                  style={{ padding: 8 }}
                 >
                   <Ionicons name="trash" size={18} color={theme.error} />
                 </Pressable>
               </View>
             </View>
-          </View>
+          </BrandCard>
         ))}
 
         {calculation && periods && periods.length > 0 && (
           <View
             style={{
               backgroundColor: theme.primaryLight,
-              borderRadius: 14,
+              borderRadius: radii.xl,
               borderCurve: 'continuous',
-              padding: 16,
-              gap: 8,
+              padding: spacing.lg,
+              gap: 6,
             }}
           >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.primary }}>
-              Total Calculation
+            <Text
+              style={[
+                typography.h3,
+                { color: theme.primary, textAlign: 'right' },
+              ]}
+            >
+              الإجمالي
             </Text>
             <Text
               selectable
               style={{
-                fontSize: 13,
+                ...typography.body,
                 color: theme.primary,
                 fontVariant: ['tabular-nums'],
+                textAlign: 'right',
               }}
             >
-              {calculation.totalDays.toLocaleString()} days ={' '}
-              {calculation.totalPrayers.toLocaleString()} prayers
+              {format.toArabicDigits(calculation.totalDays)} يوم ={' '}
+              {format.toArabicDigits(calculation.totalPrayers)} صلاة
             </Text>
           </View>
         )}

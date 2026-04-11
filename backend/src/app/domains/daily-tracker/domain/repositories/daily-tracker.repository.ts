@@ -13,5 +13,6 @@ export interface DailyTrackerRepository {
   findByUserAndDateRange(userId: string, startDate: Date, endDate: Date): Promise<DailyTracker[]>;
   upsert(userId: string, date: Date, data: UpsertDailyTrackerData): Promise<DailyTracker>;
   findUnfinalizedBefore(date: Date): Promise<DailyTracker[]>;
+  findUnfinalizedBeforeForUser(userId: string, date: Date): Promise<DailyTracker[]>;
   finalize(id: string): Promise<DailyTracker>;
 }

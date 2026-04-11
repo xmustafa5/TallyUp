@@ -1,18 +1,13 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { format } from 'date-fns';
 import { useCreateGapPeriod } from '@/hooks/use-gap-periods';
 import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
-import { colors } from '@/constants/theme';
-import { parse, isValid, format } from 'date-fns';
+import { DateField } from '@/components/ui/date-field';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 import type { InputMethod } from '@/services/gap-periods';
 
 export default function GapPeriodsOnboarding() {
@@ -21,34 +16,32 @@ export default function GapPeriodsOnboarding() {
   const createGapPeriod = useCreateGapPeriod();
 
   const [inputMethod, setInputMethod] = useState<InputMethod>('DATE_RANGE');
-  const [startDateText, setStartDateText] = useState('2015-01-01');
-  const [endDateText, setEndDateText] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState<Date | null>(new Date(2015, 0, 1));
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [startAge, setStartAge] = useState('');
   const [endAge, setEndAge] = useState('');
 
   const onSubmit = async () => {
     try {
       if (inputMethod === 'DATE_RANGE') {
-        const parsedStart = parse(startDateText, 'yyyy-MM-dd', new Date());
-        const parsedEnd = parse(endDateText, 'yyyy-MM-dd', new Date());
-        if (!isValid(parsedStart) || !isValid(parsedEnd)) {
-          Alert.alert('Error', 'Please enter valid dates in YYYY-MM-DD format.');
+        if (!startDate || !endDate) {
+          Alert.alert('تنبيه', 'يرجى اختيار تاريخي البداية والنهاية.');
           return;
         }
-        if (parsedStart >= parsedEnd) {
-          Alert.alert('Error', 'Start date must be before end date.');
+        if (startDate >= endDate) {
+          Alert.alert('خطأ', 'تاريخ البداية يجب أن يسبق تاريخ النهاية.');
           return;
         }
         await createGapPeriod.mutateAsync({
           inputMethod: 'DATE_RANGE',
-          startDate: format(parsedStart, 'yyyy-MM-dd'),
-          endDate: format(parsedEnd, 'yyyy-MM-dd'),
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
         });
       } else {
         const sAge = parseInt(startAge);
         const eAge = parseInt(endAge);
         if (isNaN(sAge) || isNaN(eAge) || sAge >= eAge) {
-          Alert.alert('Error', 'Please enter valid ages (start < end)');
+          Alert.alert('خطأ', 'يرجى إدخال أعمار صحيحة (البداية < النهاية).');
           return;
         }
         await createGapPeriod.mutateAsync({
@@ -60,8 +53,8 @@ export default function GapPeriodsOnboarding() {
       router.push('/(onboarding)/summary');
     } catch (error: any) {
       const message =
-        error?.response?.data?.message || 'Failed to create gap period.';
-      Alert.alert('Error', message);
+        error?.response?.data?.message || 'تعذّر إنشاء الفترة.';
+      Alert.alert('خطأ', message);
     }
   };
 
@@ -69,100 +62,103 @@ export default function GapPeriodsOnboarding() {
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{
-        paddingHorizontal: 24,
+        paddingHorizontal: spacing['2xl'],
         paddingTop: insets.top + 40,
-        paddingBottom: insets.bottom + 24,
-        gap: 28,
+        paddingBottom: insets.bottom + spacing['2xl'],
+        gap: spacing['2xl'],
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <View
-        style={{ gap: 8 }}
-      >
+      <View style={{ gap: spacing.sm }}>
         <Text
-          style={{ fontSize: 28, fontWeight: '700', color: theme.text }}
+          style={[
+            typography.h1,
+            { color: theme.text, textAlign: 'right' },
+          ]}
         >
-          Gap Periods
+          فترات الانقطاع
         </Text>
-        <Text style={{ fontSize: 16, color: theme.textSecondary, lineHeight: 22 }}>
-          When did you miss prayers? Add the time periods you were not praying
-          regularly.
+        <Text
+          style={{
+            ...typography.body,
+            color: theme.textSecondary,
+            lineHeight: 22,
+            textAlign: 'right',
+          }}
+        >
+          متى انقطعت عن الصلاة؟ أضف الفترات الزمنية التي لم تكن تصلّي فيها بانتظام.
         </Text>
       </View>
 
-      <View
-        style={{ gap: 16 }}
-      >
+      <View style={{ gap: spacing.lg }}>
         <View
           style={{
             flexDirection: 'row',
             backgroundColor: theme.surfaceAlt,
-            borderRadius: 10,
+            borderRadius: radii.md,
             borderCurve: 'continuous',
             padding: 4,
           }}
         >
-          {(['DATE_RANGE', 'AGE_RANGE'] as const).map((method) => (
-            <Pressable
-              key={method}
-              onPress={() => setInputMethod(method)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                backgroundColor:
-                  inputMethod === method ? theme.background : 'transparent',
-                alignItems: 'center',
-                boxShadow:
-                  inputMethod === method
-                    ? '0 1px 3px rgba(0,0,0,0.1)'
-                    : undefined,
-              }}
-            >
-              <Text
+          {(['DATE_RANGE', 'AGE_RANGE'] as const).map((method) => {
+            const active = inputMethod === method;
+            return (
+              <Pressable
+                key={method}
+                onPress={() => setInputMethod(method)}
                 style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color:
-                    inputMethod === method
-                      ? theme.text
-                      : theme.textSecondary,
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: radii.sm,
+                  borderCurve: 'continuous',
+                  backgroundColor: active ? theme.surface : 'transparent',
+                  alignItems: 'center',
+                  boxShadow: active
+                    ? '0 2px 6px rgba(26,54,93,0.08)'
+                    : undefined,
                 }}
               >
-                {method === 'DATE_RANGE' ? 'Date Range' : 'Age Range'}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={{
+                    ...typography.label,
+                    color: active ? theme.primary : theme.textSecondary,
+                  }}
+                >
+                  {method === 'DATE_RANGE' ? 'بالتاريخ' : 'بالعمر'}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {inputMethod === 'DATE_RANGE' ? (
-          <View style={{ gap: 16 }}>
-            <TextInput
-              label="Start Date"
-              placeholder="YYYY-MM-DD"
-              value={startDateText}
-              onChangeText={setStartDateText}
+          <View style={{ gap: spacing.lg }}>
+            <DateField
+              label="تاريخ البداية"
+              value={startDate}
+              onChange={setStartDate}
+              maximumDate={new Date()}
             />
-            <TextInput
-              label="End Date"
-              placeholder="YYYY-MM-DD"
-              value={endDateText}
-              onChangeText={setEndDateText}
+            <DateField
+              label="تاريخ النهاية"
+              value={endDate}
+              onChange={setEndDate}
+              maximumDate={new Date()}
+              minimumDate={startDate ?? undefined}
             />
           </View>
         ) : (
-          <View style={{ gap: 16 }}>
+          <View style={{ gap: spacing.lg }}>
             <TextInput
-              label="Start Age"
-              placeholder="e.g., 13"
+              label="العمر من"
+              placeholder="مثال: ١٣"
               value={startAge}
               onChangeText={setStartAge}
               keyboardType="number-pad"
             />
             <TextInput
-              label="End Age"
-              placeholder="e.g., 25"
+              label="إلى"
+              placeholder="مثال: ٢٥"
               value={endAge}
               onChangeText={setEndAge}
               keyboardType="number-pad"
@@ -171,18 +167,18 @@ export default function GapPeriodsOnboarding() {
         )}
       </View>
 
-      <View
-        style={{ gap: 12 }}
-      >
+      <View style={{ gap: spacing.md }}>
         <Button
-          title="Calculate & Continue"
+          title="احسب وتابع"
           onPress={onSubmit}
           loading={createGapPeriod.isPending}
+          fullWidth
         />
         <Button
-          title="Skip for Now"
+          title="تخطٍ الآن"
           variant="ghost"
           onPress={() => router.push('/(onboarding)/summary')}
+          fullWidth
         />
       </View>
     </ScrollView>

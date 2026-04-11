@@ -62,6 +62,21 @@ export class PrismaDailyTrackerRepository implements DailyTrackerRepository {
     return records.map((r) => DailyTracker.fromPrisma(r));
   }
 
+  async findUnfinalizedBeforeForUser(
+    userId: string,
+    date: Date,
+  ): Promise<DailyTracker[]> {
+    const records = await this.prisma.dailyTracker.findMany({
+      where: {
+        userId,
+        isFinalized: false,
+        date: { lt: date },
+      },
+      orderBy: { date: 'asc' },
+    });
+    return records.map((r) => DailyTracker.fromPrisma(r));
+  }
+
   async finalize(id: string): Promise<DailyTracker> {
     const record = await this.prisma.dailyTracker.update({
       where: { id },

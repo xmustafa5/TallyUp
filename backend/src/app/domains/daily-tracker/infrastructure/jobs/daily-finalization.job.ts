@@ -1,8 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { Worker } from 'bullmq';
-import { PrismaDailyTrackerRepository } from '../repositories/prisma-daily-tracker.repository';
-import { finalizeTracker } from '../../domain/services/finalization.service';
-import { getTodayUTC } from '../../domain/services/daily-tracker.service';
+import { catchUpUserFinalization } from '../../domain/services/catch-up.service';
 
 /**
  * Sets up the daily finalization BullMQ job.
@@ -45,31 +43,38 @@ export async function setupFinalizationJob(fastify: FastifyInstance): Promise<vo
 
       fastify.log.info('Starting daily finalization job');
 
-      const repository = new PrismaDailyTrackerRepository(fastify.prisma);
-      const today = getTodayUTC();
+      // Iterate every active user and catch up their finalization. The
+      // catch-up service handles both cases: existing unfinalized rows
+      // AND missing rows for days the user never opened the app.
+      const users = await fastify.prisma.user.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
 
-      const unfinalizedTrackers = await repository.findUnfinalizedBefore(today);
-
-      if (unfinalizedTrackers.length === 0) {
-        fastify.log.info('No unfinalized trackers to process');
-        return;
-      }
-
-      let finalized = 0;
-      for (const tracker of unfinalizedTrackers) {
+      let totalBackfilled = 0;
+      let totalFinalized = 0;
+      for (const user of users) {
         try {
-          await finalizeTracker(fastify.prisma, tracker);
-          finalized++;
+          const result = await catchUpUserFinalization(
+            fastify.prisma,
+            user.id,
+          );
+          totalBackfilled += result.backfilled;
+          totalFinalized += result.finalized;
         } catch (error) {
           fastify.log.error(
-            { trackerId: tracker.id, error },
-            'Failed to finalize tracker',
+            { userId: user.id, error },
+            'Failed to catch up user finalization',
           );
         }
       }
 
       fastify.log.info(
-        { finalized, total: unfinalizedTrackers.length },
+        {
+          users: users.length,
+          backfilled: totalBackfilled,
+          finalized: totalFinalized,
+        },
         'Daily finalization job completed',
       );
     },

@@ -20,13 +20,13 @@ import { colors } from '@/constants/theme';
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Please enter a valid email'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    name: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل'),
+    email: z.string().email('يرجى إدخال بريد إلكتروني صحيح'),
+    password: z.string().min(8, 'كلمة المرور يجب أن تكون ٨ أحرف على الأقل'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'كلمتا المرور غير متطابقتين',
     path: ['confirmPassword'],
   });
 
@@ -59,8 +59,8 @@ export default function RegisterScreen() {
       router.replace('/(onboarding)/welcome');
     } catch (error: any) {
       const message =
-        error?.response?.data?.message || 'Registration failed. Please try again.';
-      Alert.alert('Error', message);
+        error?.response?.data?.message || 'فشل التسجيل. يرجى المحاولة مرة أخرى.';
+      Alert.alert('خطأ', message);
     } finally {
       setLoading(false);
     }

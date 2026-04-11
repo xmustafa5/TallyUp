@@ -3,6 +3,7 @@ import type { PrayerType } from '@prisma/client';
 import { PrismaDailyTrackerRepository } from '../../infrastructure/repositories/prisma-daily-tracker.repository';
 import { getTodayUTC, shouldUpdateStreak } from '../../domain/services/daily-tracker.service';
 import { finalizeTracker } from '../../domain/services/finalization.service';
+import { catchUpUserFinalization } from '../../domain/services/catch-up.service';
 import {
   getTodaySchema,
   getDateSchema,
@@ -33,6 +34,19 @@ export default async function dailyTrackerRoutes(fastify: FastifyInstance) {
   fastify.get('/today', { schema: getTodaySchema }, async (request, reply) => {
     const { id: userId } = request.user as { id: string };
     const today = getTodayUTC();
+
+    // Before returning today's row, finalize any past days the user missed
+    // (including days where they never opened the app). This guarantees
+    // the UI reflects accumulated qadha debt the moment the app is opened,
+    // not only after the nightly cron.
+    try {
+      await catchUpUserFinalization(fastify.prisma, userId);
+    } catch (err) {
+      fastify.log.error(
+        { err, userId },
+        'catchUpUserFinalization failed on /daily-tracker/today',
+      );
+    }
 
     const tracker = await repository.upsert(userId, today, {});
 

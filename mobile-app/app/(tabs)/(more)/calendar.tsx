@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'rea
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { format as dfFormat, getDaysInMonth, getDay, parseISO } from 'date-fns';
+import { arMonthYear, arWeekdayDate } from '@/lib/arabic-date';
 import { useCalendarMonth, useCalendarDayDetail } from '@/hooks/use-progress';
 import { useDateTracker, useMarkPrayers } from '@/hooks/use-daily-tracker';
 import { useLogMakeupForDay } from '@/hooks/use-makeup';
@@ -228,7 +229,7 @@ function DayDetailDrawer({
           }}
         >
           <Text style={[typography.h3, { color: theme.text }]}>
-            {dfFormat(parseISO(date), 'EEEE, MMMM d')}
+            {arWeekdayDate(parseISO(date))}
           </Text>
           <Pressable onPress={onClose} style={{ padding: 4 }}>
             <Ionicons name="close" size={22} color={theme.textTertiary} />
@@ -453,7 +454,7 @@ export default function CalendarScreen() {
               <Ionicons name="chevron-forward" size={20} color={theme.primary} />
             </Pressable>
             <Text style={[typography.h3, { color: theme.text }]}>
-              {dfFormat(new Date(year, month - 1), 'MMMM yyyy')}
+              {arMonthYear(new Date(year, month - 1))}
             </Text>
             <Pressable onPress={nextMonth} style={{ padding: 8 }}>
               <Ionicons name="chevron-back" size={20} color={theme.primary} />

@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { Stack } from 'expo-router';
-import { useSchedule, useUpdateSchedule, useTodayProgress } from '@/hooks/use-schedule';
+import {
+  useSchedule,
+  useUpdateSchedule,
+  useTodayProgress,
+} from '@/hooks/use-schedule';
 import { TextInput } from '@/components/ui/text-input';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { SectionHeader } from '@/components/ui/section-header';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
 
 export default function ScheduleScreen() {
   const theme = colors.light;
@@ -26,11 +32,11 @@ export default function ScheduleScreen() {
     const dg = parseInt(dailyGoal);
     const wg = parseInt(weeklyGoal);
     if (isNaN(dg) || dg < 1 || dg > 50) {
-      Alert.alert('Error', 'Daily goal must be between 1 and 50');
+      Alert.alert('خطأ', 'الهدف اليومي يجب أن يكون بين ١ و ٥٠');
       return;
     }
     if (isNaN(wg) || wg < 1 || wg > 350) {
-      Alert.alert('Error', 'Weekly goal must be between 1 and 350');
+      Alert.alert('خطأ', 'الهدف الأسبوعي يجب أن يكون بين ١ و ٣٥٠');
       return;
     }
     updateSchedule.mutate({ dailyGoal: dg, weeklyGoal: wg });
@@ -38,88 +44,121 @@ export default function ScheduleScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Goals' }} />
+      <Stack.Screen options={{ title: 'الأهداف' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 24 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ gap: 16 }}>
-          <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>
-            Prayer Goals
-          </Text>
+        <View style={{ gap: spacing.lg }}>
+          <SectionHeader title="أهداف الصلاة" />
           <TextInput
-            label="Daily Goal"
+            label="الهدف اليومي"
             value={dailyGoal}
             onChangeText={setDailyGoal}
             keyboardType="number-pad"
-            placeholder="1-50"
+            placeholder="١–٥٠"
           />
           <TextInput
-            label="Weekly Goal"
+            label="الهدف الأسبوعي"
             value={weeklyGoal}
             onChangeText={setWeeklyGoal}
             keyboardType="number-pad"
-            placeholder="1-350"
+            placeholder="١–٣٥٠"
           />
-          <Button title="Save Goals" onPress={handleSave} loading={updateSchedule.isPending} />
+          <Button
+            title="حفظ الأهداف"
+            onPress={handleSave}
+            loading={updateSchedule.isPending}
+            fullWidth
+          />
         </View>
 
         {progress && (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 16,
-              gap: 14,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
-              Today's Progress
+          <BrandCard>
+            <Text
+              style={[
+                typography.h3,
+                {
+                  color: theme.text,
+                  marginBottom: spacing.md,
+                  textAlign: 'right',
+                },
+              ]}
+            >
+              تقدّم اليوم
             </Text>
-            <View style={{ gap: 10 }}>
-              <View style={{ gap: 4 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Daily</Text>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
-                    {progress.dailyCompleted}/{progress.dailyGoal} ({Math.round(progress.dailyPercentage)}%)
-                  </Text>
-                </View>
-                <View style={{ height: 8, backgroundColor: theme.surfaceAlt, borderRadius: 4 }}>
-                  <View
-                    style={{
-                      height: 8,
-                      backgroundColor: theme.primary,
-                      borderRadius: 4,
-                      width: `${Math.min(progress.dailyPercentage, 100)}%`,
-                    }}
-                  />
-                </View>
-              </View>
-              <View style={{ gap: 4 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>Weekly</Text>
-                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontVariant: ['tabular-nums'] }}>
-                    {progress.weeklyCompleted}/{progress.weeklyGoal} ({Math.round(progress.weeklyPercentage)}%)
-                  </Text>
-                </View>
-                <View style={{ height: 8, backgroundColor: theme.surfaceAlt, borderRadius: 4 }}>
-                  <View
-                    style={{
-                      height: 8,
-                      backgroundColor: theme.success,
-                      borderRadius: 4,
-                      width: `${Math.min(progress.weeklyPercentage, 100)}%`,
-                    }}
-                  />
-                </View>
-              </View>
+            <View style={{ gap: spacing.md }}>
+              <GoalBar
+                label="يومي"
+                completed={progress.dailyCompleted}
+                goal={progress.dailyGoal}
+                percentage={progress.dailyPercentage}
+                color={theme.accent}
+              />
+              <GoalBar
+                label="أسبوعي"
+                completed={progress.weeklyCompleted}
+                goal={progress.weeklyGoal}
+                percentage={progress.weeklyPercentage}
+                color={theme.primary}
+              />
             </View>
-          </View>
+          </BrandCard>
         )}
       </ScrollView>
     </>
+  );
+}
+
+function GoalBar({
+  label,
+  completed,
+  goal,
+  percentage,
+  color,
+}: {
+  label: string;
+  completed: number;
+  goal: number;
+  percentage: number;
+  color: string;
+}) {
+  const theme = colors.light;
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Text style={[typography.caption, { color: theme.textSecondary }]}>
+          {label}
+        </Text>
+        <Text
+          style={{
+            ...typography.caption,
+            color: theme.textSecondary,
+            fontVariant: ['tabular-nums'],
+          }}
+        >
+          {format.toArabicDigits(completed)}/{format.toArabicDigits(goal)} (
+          {format.toArabicDigits(Math.round(percentage))}٪)
+        </Text>
+      </View>
+      <View
+        style={{
+          height: 8,
+          backgroundColor: theme.surfaceAlt,
+          borderRadius: radii.pill,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            height: '100%',
+            backgroundColor: color,
+            width: `${Math.min(percentage, 100)}%`,
+          }}
+        />
+      </View>
+    </View>
   );
 }

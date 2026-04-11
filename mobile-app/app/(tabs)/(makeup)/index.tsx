@@ -1,7 +1,8 @@
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { format as dfFormat, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { arDateTime } from '@/lib/arabic-date';
 import {
   useMakeupStats,
   useLogMakeup,
@@ -146,13 +147,17 @@ function HistoryItem({
               borderRadius: radii.sm,
             }}
           >
-            <Text style={{ fontSize: 10, fontWeight: '600', color: sourceColor }}>
-              {item.source.replace('_', ' ')}
+            <Text style={{ fontSize: 10, fontWeight: '700', color: sourceColor }}>
+              {item.source === 'MANUAL'
+                ? 'يدوي'
+                : item.source === 'DAILY_MISSED'
+                  ? 'فائتة من اليوم'
+                  : item.source}
             </Text>
           </View>
         </View>
         <Text style={{ ...typography.caption, color: theme.textTertiary }}>
-          {dfFormat(parseISO(item.completedAt), 'MMM d, h:mm a')}
+          {arDateTime(parseISO(item.completedAt))}
         </Text>
       </View>
       <Pressable

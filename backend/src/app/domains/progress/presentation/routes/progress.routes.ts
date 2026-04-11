@@ -5,6 +5,7 @@ import {
   getMilestone,
 } from '../../domain/services/progress.service';
 import { mergeOverlappingPeriods } from '../../../gap-period/domain/services/prayer-calculator.service';
+import { catchUpUserFinalization } from '../../../daily-tracker/domain/services/catch-up.service';
 import {
   getDashboardSchema,
   getCalendarMonthSchema,
@@ -22,6 +23,23 @@ export default async function progressRoutes(fastify: FastifyInstance) {
   // GET /progress (dashboard)
   fastify.get('/', { schema: getDashboardSchema }, async (request, reply) => {
     const { id: userId } = request.user as { id: string };
+
+    // Catch up any missed-day finalization before reading cached balance.
+    // If the user was offline for several days, this creates their missing
+    // DailyTracker rows, finalizes them as zero-prayer days, and writes
+    // DAILY_MISSED MakeupLog entries so the balance reflects reality.
+    try {
+      const result = await catchUpUserFinalization(fastify.prisma, userId);
+      if (result.finalized > 0 || result.backfilled > 0) {
+        // Catch-up mutated state; invalidate stale dashboard cache
+        await cache.invalidateExact(CACHE_KEYS.dashboard(userId));
+      }
+    } catch (err) {
+      fastify.log.error(
+        { err, userId },
+        'catchUpUserFinalization failed on GET /progress',
+      );
+    }
 
     // Try cache first
     const cacheKey = CACHE_KEYS.dashboard(userId);
@@ -78,6 +96,21 @@ export default async function progressRoutes(fastify: FastifyInstance) {
   fastify.get('/calendar/:year/:month', { schema: getCalendarMonthSchema }, async (request, reply) => {
     const { id: userId } = request.user as { id: string };
     const { year, month } = request.params as { year: number; month: number };
+
+    // Catch up any missing past-day trackers before reading the calendar.
+    // Without this, days the user was entirely offline render as "no-data"
+    // (grey) instead of "missed" (red), because no DailyTracker row exists.
+    try {
+      const result = await catchUpUserFinalization(fastify.prisma, userId);
+      if (result.finalized > 0 || result.backfilled > 0) {
+        await cache.invalidateExact(CACHE_KEYS.calendar(userId, year, month));
+      }
+    } catch (err) {
+      fastify.log.error(
+        { err, userId },
+        'catchUpUserFinalization failed on GET /progress/calendar',
+      );
+    }
 
     // Try cache first
     const cacheKey = CACHE_KEYS.calendar(userId, year, month);

@@ -3,7 +3,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePrayerBalance } from '@/hooks/use-gap-periods';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
 import { PRAYER_NAMES, PRAYER_TYPES } from '@/constants/prayers';
 
 export default function SummaryScreen() {
@@ -18,116 +20,104 @@ export default function SummaryScreen() {
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: 24,
-        paddingTop: insets.top + 60,
-        paddingBottom: insets.bottom + 24,
+        paddingHorizontal: spacing['2xl'],
+        paddingTop: insets.top + 48,
+        paddingBottom: insets.bottom + spacing['2xl'],
         justifyContent: 'space-between',
       }}
     >
-      <View style={{ flex: 1, justifyContent: 'center', gap: 32 }}>
-        <View
-          style={{ alignItems: 'center', gap: 8 }}
-        >
+      <View style={{ flex: 1, justifyContent: 'center', gap: spacing['3xl'] }}>
+        <View style={{ alignItems: 'center', gap: spacing.sm }}>
           <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '500',
-              color: theme.textSecondary,
-            }}
+            style={[typography.label, { color: theme.textSecondary }]}
           >
-            Your total missed prayers
+            إجمالي صلواتك الفائتة
           </Text>
           <Text
             selectable
             style={{
-              fontSize: 48,
-              fontWeight: '700',
+              ...typography.display,
+              fontSize: 56,
               color: theme.primary,
               fontVariant: ['tabular-nums'],
               textAlign: 'center',
             }}
           >
-            {totalRemaining.toLocaleString()}
+            {format.toArabicDigits(totalRemaining)}
           </Text>
           <Text
-            style={{
-              fontSize: 16,
-              color: theme.textSecondary,
-            }}
+            style={[typography.body, { color: theme.textSecondary }]}
           >
-            prayers to make up
+            صلاة بحاجة إلى قضاء
           </Text>
         </View>
 
         {balance && (
-          <View
-            style={{
-              backgroundColor: theme.surface,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 20,
-              gap: 12,
-            }}
-          >
-            {PRAYER_TYPES.map((type) => {
-              const key = type.toLowerCase() as keyof typeof balance;
-              const count = (balance[key] as number) ?? 0;
+          <BrandCard>
+            <View style={{ gap: spacing.md }}>
+              {PRAYER_TYPES.map((type) => {
+                const key = type.toLowerCase() as keyof typeof balance;
+                const count = (balance[key] as number) ?? 0;
 
-              return (
-                <View
-                  key={type}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
+                return (
+                  <View
+                    key={type}
                     style={{
-                      fontSize: 16,
-                      color: theme.text,
-                      fontWeight: '500',
+                      flexDirection: 'row-reverse',
+                      alignItems: 'center',
+                      gap: spacing.md,
                     }}
                   >
-                    {PRAYER_NAMES[type].en}
-                  </Text>
-                  <Text
-                    selectable
-                    style={{
-                      fontSize: 16,
-                      fontWeight: '600',
-                      color: theme.primary,
-                      fontVariant: ['tabular-nums'],
-                    }}
-                  >
-                    {count.toLocaleString()}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
+                    <PrayerIcon
+                      name={type.toLowerCase() as PrayerName}
+                      size={40}
+                      tone="gold"
+                    />
+                    <Text
+                      style={{
+                        ...typography.bodyLg,
+                        flex: 1,
+                        fontWeight: '700',
+                        color: theme.text,
+                        textAlign: 'right',
+                      }}
+                    >
+                      {PRAYER_NAMES[type].ar}
+                    </Text>
+                    <Text
+                      selectable
+                      style={{
+                        ...typography.h3,
+                        color: theme.accent,
+                        fontVariant: ['tabular-nums'],
+                      }}
+                    >
+                      {format.toArabicDigits(count)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </BrandCard>
         )}
 
-        <View>
-          <Text
-            style={{
-              fontSize: 16,
-              color: theme.textSecondary,
-              textAlign: 'center',
-              lineHeight: 22,
-            }}
-          >
-            Let us help you make these up, one prayer at a time.
-          </Text>
-        </View>
+        <Text
+          style={{
+            ...typography.body,
+            color: theme.textSecondary,
+            textAlign: 'center',
+            lineHeight: 24,
+          }}
+        >
+          سنساعدك في قضائها صلاة تلو الأخرى، بخطى ثابتة.
+        </Text>
       </View>
 
-      <View>
-        <Button
-          title="Start Your Journey"
-          onPress={() => router.replace('/(tabs)/(home)')}
-        />
-      </View>
+      <Button
+        title="ابدأ رحلتك"
+        onPress={() => router.replace('/(tabs)/(home)')}
+        fullWidth
+      />
     </View>
   );
 }

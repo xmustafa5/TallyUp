@@ -6,7 +6,7 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/hooks/use-notifications';
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 
 function SettingsRow({
   label,
@@ -25,7 +25,7 @@ function SettingsRow({
       onPress={onPress}
       disabled={!onPress}
       style={({ pressed }) => ({
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         alignItems: 'center',
         paddingVertical: 14,
         paddingHorizontal: 16,
@@ -33,13 +33,24 @@ function SettingsRow({
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      {icon && <Ionicons name={icon} size={20} color={theme.textSecondary} />}
-      <Text style={{ flex: 1, fontSize: 15, color: theme.text }}>{label}</Text>
+      {icon && <Ionicons name={icon} size={20} color={theme.primary} />}
+      <Text
+        style={{
+          ...typography.body,
+          flex: 1,
+          color: theme.text,
+          textAlign: 'right',
+        }}
+      >
+        {label}
+      </Text>
       {value && (
-        <Text style={{ fontSize: 14, color: theme.textSecondary }}>{value}</Text>
+        <Text style={[typography.caption, { color: theme.textSecondary }]}>
+          {value}
+        </Text>
       )}
       {onPress && (
-        <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+        <Ionicons name="chevron-back" size={18} color={theme.textTertiary} />
       )}
     </Pressable>
   );
@@ -60,19 +71,53 @@ function ToggleRow({
   return (
     <View
       style={{
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 16,
         gap: 12,
       }}
     >
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ fontSize: 15, color: theme.text }}>{label}</Text>
-        <Text style={{ fontSize: 12, color: theme.textSecondary }}>{description}</Text>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text
+          style={[typography.body, { color: theme.text, textAlign: 'right' }]}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[
+            typography.caption,
+            { color: theme.textSecondary, textAlign: 'right' },
+          ]}
+        >
+          {description}
+        </Text>
       </View>
-      <Switch value={value} onValueChange={onValueChange} />
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: theme.surfaceAlt, true: theme.primary }}
+        thumbColor="#FFFFFF"
+      />
     </View>
+  );
+}
+
+function SectionLabel({ children }: { children: string }) {
+  const theme = colors.light;
+  return (
+    <Text
+      style={{
+        ...typography.caption,
+        color: theme.textSecondary,
+        fontWeight: '700',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        textAlign: 'right',
+      }}
+    >
+      {children}
+    </Text>
   );
 }
 
@@ -84,10 +129,10 @@ export default function SettingsScreen() {
   const updatePrefs = useUpdateNotificationPreferences();
 
   const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج؟', [
+      { text: 'إلغاء', style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: 'خروج',
         style: 'destructive',
         onPress: () => {
           clearAuth();
@@ -99,114 +144,147 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Settings' }} />
+      <Stack.Screen options={{ title: 'الإعدادات' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingBottom: 40, gap: 24, paddingTop: 12 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{
+          paddingBottom: spacing['4xl'],
+          gap: spacing['2xl'],
+          paddingTop: spacing.md,
+        }}
       >
         <View>
-          <Text
+          <SectionLabel>الملف الشخصي</SectionLabel>
+          <View
             style={{
-              fontSize: 13,
-              fontWeight: '600',
-              color: theme.textSecondary,
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              textTransform: 'uppercase',
+              backgroundColor: theme.card,
+              borderRadius: radii.xl,
+              borderCurve: 'continuous',
+              marginHorizontal: spacing.lg,
+              overflow: 'hidden',
+              boxShadow: '0 4px 16px rgba(26,54,93,0.06)',
             }}
           >
-            Profile
-          </Text>
-          <View style={{ backgroundColor: theme.card }}>
             <SettingsRow
-              label="Name"
+              label="الاسم"
               value={user?.name}
               icon="person"
-              onPress={() => router.push('/(tabs)/(more)/settings/profile' as any)}
+              onPress={() =>
+                router.push('/(tabs)/(more)/settings/profile' as any)
+              }
             />
-            <View style={{ height: 0.5, backgroundColor: theme.border, marginLeft: 48 }} />
-            <SettingsRow label="Email" value={user?.email} icon="mail" />
+            <View
+              style={{
+                height: 1,
+                backgroundColor: theme.border,
+                marginLeft: 16,
+                marginRight: 48,
+              }}
+            />
+            <SettingsRow label="البريد الإلكتروني" value={user?.email} icon="mail" />
           </View>
         </View>
 
         {prefs && (
           <View>
-            <Text
+            <SectionLabel>الإشعارات</SectionLabel>
+            <View
               style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: theme.textSecondary,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                textTransform: 'uppercase',
+                backgroundColor: theme.card,
+                borderRadius: radii.xl,
+                borderCurve: 'continuous',
+                marginHorizontal: spacing.lg,
+                overflow: 'hidden',
+                boxShadow: '0 4px 16px rgba(26,54,93,0.06)',
               }}
             >
-              Notifications
-            </Text>
-            <View style={{ backgroundColor: theme.card }}>
               <ToggleRow
-                label="Prayer Reminders"
-                description="Daily prayer reminders"
+                label="تذكيرات الصلاة"
+                description="تذكير يومي بأوقات الصلاة"
                 value={prefs.prayerReminders}
                 onValueChange={(v) =>
                   updatePrefs.mutate({ prayerReminders: v })
                 }
               />
-              <View style={{ height: 0.5, backgroundColor: theme.border, marginLeft: 16 }} />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: theme.border,
+                  marginHorizontal: 16,
+                }}
+              />
               <ToggleRow
-                label="Goal Reminders"
-                description="When behind on goals"
+                label="تذكيرات الأهداف"
+                description="عند التأخر عن الأهداف"
                 value={prefs.goalReminders}
                 onValueChange={(v) =>
                   updatePrefs.mutate({ goalReminders: v })
                 }
               />
-              <View style={{ height: 0.5, backgroundColor: theme.border, marginLeft: 16 }} />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: theme.border,
+                  marginHorizontal: 16,
+                }}
+              />
               <ToggleRow
-                label="Streak Reminders"
-                description="Evening reminders"
+                label="تذكيرات السلسلة"
+                description="تذكيرات مسائية"
                 value={prefs.streakReminders}
                 onValueChange={(v) =>
                   updatePrefs.mutate({ streakReminders: v })
                 }
               />
-              <View style={{ height: 0.5, backgroundColor: theme.border, marginLeft: 16 }} />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: theme.border,
+                  marginHorizontal: 16,
+                }}
+              />
               <ToggleRow
-                label="Milestones"
-                description="Celebration notifications"
+                label="الإنجازات"
+                description="إشعارات عند بلوغ المراحل"
                 value={prefs.milestones}
-                onValueChange={(v) =>
-                  updatePrefs.mutate({ milestones: v })
-                }
+                onValueChange={(v) => updatePrefs.mutate({ milestones: v })}
               />
             </View>
           </View>
         )}
 
         <View>
-          <Text
+          <SectionLabel>الحساب</SectionLabel>
+          <View
             style={{
-              fontSize: 13,
-              fontWeight: '600',
-              color: theme.textSecondary,
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              textTransform: 'uppercase',
+              backgroundColor: theme.card,
+              borderRadius: radii.xl,
+              borderCurve: 'continuous',
+              marginHorizontal: spacing.lg,
+              overflow: 'hidden',
+              boxShadow: '0 4px 16px rgba(26,54,93,0.06)',
             }}
           >
-            Account
-          </Text>
-          <View style={{ backgroundColor: theme.card }}>
             <SettingsRow
-              label="Change Password"
+              label="تغيير كلمة المرور"
               icon="lock-closed"
-              onPress={() => router.push('/(tabs)/(more)/settings/password' as any)}
+              onPress={() =>
+                router.push('/(tabs)/(more)/settings/password' as any)
+              }
             />
-            <View style={{ height: 0.5, backgroundColor: theme.border, marginLeft: 48 }} />
+            <View
+              style={{
+                height: 1,
+                backgroundColor: theme.border,
+                marginLeft: 16,
+                marginRight: 48,
+              }}
+            />
             <Pressable
               onPress={handleSignOut}
               style={({ pressed }) => ({
-                flexDirection: 'row',
+                flexDirection: 'row-reverse',
                 alignItems: 'center',
                 paddingVertical: 14,
                 paddingHorizontal: 16,
@@ -215,7 +293,14 @@ export default function SettingsScreen() {
               })}
             >
               <Ionicons name="log-out" size={20} color={theme.error} />
-              <Text style={{ fontSize: 15, color: theme.error }}>Sign Out</Text>
+              <Text
+                style={[
+                  typography.body,
+                  { color: theme.error, flex: 1, textAlign: 'right' },
+                ]}
+              >
+                تسجيل الخروج
+              </Text>
             </Pressable>
           </View>
         </View>

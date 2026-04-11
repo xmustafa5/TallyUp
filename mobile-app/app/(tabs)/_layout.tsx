@@ -26,20 +26,11 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="(home)"
+        name="(more)"
         options={{
-          title: 'الرئيسية',
+          title: 'إعدادات',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="moon" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="(today)"
-        options={{
-          title: 'اليوم',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="sunny" size={size} color={color} />
+            <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
           ),
         }}
       />
@@ -53,11 +44,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="(more)"
+        name="(today)"
         options={{
-          title: 'إعدادات',
+          title: 'اليوم',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
+            <Ionicons name="sunny" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="(home)"
+        options={{
+          title: 'الرئيسية',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="moon" size={size} color={color} />
           ),
         }}
       />

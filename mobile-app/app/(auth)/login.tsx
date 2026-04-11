@@ -20,8 +20,8 @@ import { Button } from '@/components/ui/button';
 import { colors } from '@/constants/theme';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('يرجى إدخال بريد إلكتروني صحيح'),
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -38,7 +38,7 @@ export default function LoginScreen() {
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: 'musmoh73@gmail.com', password: 'MM123321mm' },
   });
 
   const onSubmit = async (values: LoginForm) => {
@@ -53,8 +53,8 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       const message =
-        error?.response?.data?.message || 'Login failed. Please try again.';
-      Alert.alert('Error', message);
+        error?.response?.data?.message || 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+      Alert.alert('خطأ', message);
     } finally {
       setLoading(false);
     }
