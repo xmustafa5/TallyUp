@@ -35,6 +35,7 @@
     ],
     "extra": {
       "router": {},
+      "apiUrl": "https://api-qatha.chesty.dev",
       "eas": {
         "projectId": "07ac53ad-e610-4fc9-b1c3-1367e6757a1a"
       }
