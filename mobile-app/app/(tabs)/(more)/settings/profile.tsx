@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { View, ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { format, parseISO, parse, isValid } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { useAuthStore } from '@/stores/auth.store';
 import { updateProfile } from '@/services/profile';
 import { TextInput } from '@/components/ui/text-input';
+import { DateField } from '@/components/ui/date-field';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 
 export default function EditProfileScreen() {
   const theme = colors.light;
@@ -14,16 +15,15 @@ export default function EditProfileScreen() {
   const updateUser = useAuthStore((state) => state.updateUser);
 
   const [name, setName] = useState(user?.name ?? '');
-  const [birthdateText, setBirthdateText] = useState(
-    user?.birthdate ? format(parseISO(user.birthdate), 'yyyy-MM-dd') : '2000-01-01',
+  const [birthdate, setBirthdate] = useState<Date | null>(
+    user?.birthdate ? parseISO(user.birthdate) : new Date(2000, 0, 1),
   );
   const [pubertyAge, setPubertyAge] = useState(String(user?.pubertyAge ?? ''));
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    const parsedDate = parse(birthdateText, 'yyyy-MM-dd', new Date());
-    if (!isValid(parsedDate)) {
-      Alert.alert('Error', 'Date of birth must be in YYYY-MM-DD format.');
+    if (!birthdate) {
+      Alert.alert('تنبيه', 'يرجى اختيار تاريخ الميلاد.');
       return;
     }
 
@@ -31,13 +31,16 @@ export default function EditProfileScreen() {
     try {
       const updated = await updateProfile({
         name,
-        birthdate: birthdateText,
+        birthdate: format(birthdate, 'yyyy-MM-dd'),
         pubertyAge: pubertyAge ? parseInt(pubertyAge) : null,
       });
       updateUser(updated);
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to update profile.');
+      Alert.alert(
+        'خطأ',
+        error?.response?.data?.message || 'تعذّر تحديث الملف الشخصي.',
+      );
     } finally {
       setLoading(false);
     }
@@ -45,44 +48,43 @@ export default function EditProfileScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Edit Profile' }} />
+      <Stack.Screen options={{ title: 'تعديل الملف' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 20 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps="handled"
       >
         <TextInput
-          label="Name"
+          label="الاسم"
           value={name}
           onChangeText={setName}
-          placeholder="Your name"
-        />
-
-        <View style={{ gap: 8 }}>
-          <TextInput
-            label="Email"
-            value={user?.email ?? ''}
-            editable={false}
-            placeholder="Email cannot be changed"
-          />
-        </View>
-
-        <TextInput
-          label="Date of Birth"
-          placeholder="YYYY-MM-DD"
-          value={birthdateText}
-          onChangeText={setBirthdateText}
+          placeholder="اسمك الكامل"
         />
 
         <TextInput
-          label="Age of Puberty (optional, 9-17)"
+          label="البريد الإلكتروني"
+          value={user?.email ?? ''}
+          editable={false}
+          placeholder="لا يمكن تغيير البريد"
+        />
+
+        <DateField
+          label="تاريخ الميلاد"
+          value={birthdate}
+          onChange={setBirthdate}
+          maximumDate={new Date()}
+        />
+
+        <TextInput
+          label="عمر البلوغ (٩–١٧)"
           value={pubertyAge}
           onChangeText={setPubertyAge}
           keyboardType="number-pad"
-          placeholder="e.g., 13"
+          placeholder="مثال: ١٣"
         />
 
-        <Button title="Save Changes" onPress={handleSave} loading={loading} />
+        <Button title="حفظ التغييرات" onPress={handleSave} loading={loading} fullWidth />
       </ScrollView>
     </>
   );

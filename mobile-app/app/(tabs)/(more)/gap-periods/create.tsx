@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { parse, isValid } from 'date-fns';
+import { format } from 'date-fns';
 import { useCreateGapPeriod } from '@/hooks/use-gap-periods';
 import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
-import { colors } from '@/constants/theme';
+import { DateField } from '@/components/ui/date-field';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 import type { InputMethod } from '@/services/gap-periods';
 
 export default function CreateGapPeriodScreen() {
@@ -13,40 +14,37 @@ export default function CreateGapPeriodScreen() {
   const createGapPeriod = useCreateGapPeriod();
 
   const [inputMethod, setInputMethod] = useState<InputMethod>('DATE_RANGE');
-  const [startDateText, setStartDateText] = useState('2015-01-01');
-  const [endDateText, setEndDateText] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(new Date(2015, 0, 1));
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [startAge, setStartAge] = useState('');
   const [endAge, setEndAge] = useState('');
 
   const onSubmit = async () => {
     try {
       if (inputMethod === 'DATE_RANGE') {
-        const parsedStart = parse(startDateText, 'yyyy-MM-dd', new Date());
-        const parsedEnd = parse(endDateText, 'yyyy-MM-dd', new Date());
-
-        if (!isValid(parsedStart)) {
-          Alert.alert('Error', 'Start date must be in YYYY-MM-DD format.');
+        if (!startDate) {
+          Alert.alert('تنبيه', 'يرجى اختيار تاريخ البداية.');
           return;
         }
-        if (!isValid(parsedEnd)) {
-          Alert.alert('Error', 'End date must be in YYYY-MM-DD format.');
+        if (!endDate) {
+          Alert.alert('تنبيه', 'يرجى اختيار تاريخ النهاية.');
           return;
         }
-        if (parsedStart > parsedEnd) {
-          Alert.alert('Error', 'Start date must be before end date.');
+        if (startDate > endDate) {
+          Alert.alert('خطأ', 'تاريخ البداية يجب أن يسبق تاريخ النهاية.');
           return;
         }
 
         await createGapPeriod.mutateAsync({
           inputMethod: 'DATE_RANGE',
-          startDate: startDateText,
-          endDate: endDateText,
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
         });
       } else {
         const sAge = parseInt(startAge);
         const eAge = parseInt(endAge);
         if (isNaN(sAge) || isNaN(eAge) || sAge >= eAge) {
-          Alert.alert('Error', 'Please enter valid ages (start < end)');
+          Alert.alert('خطأ', 'يرجى إدخال أعمار صحيحة (البداية < النهاية).');
           return;
         }
         await createGapPeriod.mutateAsync({
@@ -57,77 +55,103 @@ export default function CreateGapPeriodScreen() {
       }
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error?.response?.data?.message || 'Failed to create gap period.');
+      Alert.alert(
+        'خطأ',
+        error?.response?.data?.message || 'تعذّر إنشاء الفترة.',
+      );
     }
   };
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Add Gap Period' }} />
+      <Stack.Screen options={{ title: 'إضافة فترة' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 20 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
         keyboardShouldPersistTaps="handled"
       >
         <View
           style={{
             flexDirection: 'row',
             backgroundColor: theme.surfaceAlt,
-            borderRadius: 10,
+            borderRadius: radii.md,
             borderCurve: 'continuous',
             padding: 4,
           }}
         >
-          {(['DATE_RANGE', 'AGE_RANGE'] as const).map((method) => (
-            <Pressable
-              key={method}
-              onPress={() => setInputMethod(method)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 8,
-                borderCurve: 'continuous',
-                backgroundColor: inputMethod === method ? theme.background : 'transparent',
-                alignItems: 'center',
-                boxShadow: inputMethod === method ? '0 1px 3px rgba(0,0,0,0.1)' : undefined,
-              }}
-            >
-              <Text
+          {(['DATE_RANGE', 'AGE_RANGE'] as const).map((method) => {
+            const active = inputMethod === method;
+            return (
+              <Pressable
+                key={method}
+                onPress={() => setInputMethod(method)}
                 style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: inputMethod === method ? theme.text : theme.textSecondary,
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: radii.sm,
+                  borderCurve: 'continuous',
+                  backgroundColor: active ? theme.surface : 'transparent',
+                  alignItems: 'center',
+                  boxShadow: active
+                    ? '0 2px 6px rgba(26,54,93,0.08)'
+                    : undefined,
                 }}
               >
-                {method === 'DATE_RANGE' ? 'Date Range' : 'Age Range'}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={{
+                    ...typography.label,
+                    color: active ? theme.primary : theme.textSecondary,
+                  }}
+                >
+                  {method === 'DATE_RANGE' ? 'بالتاريخ' : 'بالعمر'}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {inputMethod === 'DATE_RANGE' ? (
-          <View style={{ gap: 16 }}>
-            <TextInput
-              label="Start Date"
-              placeholder="YYYY-MM-DD"
-              value={startDateText}
-              onChangeText={setStartDateText}
+          <View style={{ gap: spacing.lg }}>
+            <DateField
+              label="تاريخ البداية"
+              value={startDate}
+              onChange={setStartDate}
+              maximumDate={new Date()}
             />
-            <TextInput
-              label="End Date"
-              placeholder="YYYY-MM-DD"
-              value={endDateText}
-              onChangeText={setEndDateText}
+            <DateField
+              label="تاريخ النهاية"
+              value={endDate}
+              onChange={setEndDate}
+              maximumDate={new Date()}
+              minimumDate={startDate ?? undefined}
             />
           </View>
         ) : (
-          <View style={{ gap: 16 }}>
-            <TextInput label="Start Age" placeholder="e.g., 13" value={startAge} onChangeText={setStartAge} keyboardType="number-pad" />
-            <TextInput label="End Age" placeholder="e.g., 25" value={endAge} onChangeText={setEndAge} keyboardType="number-pad" />
+          <View style={{ gap: spacing.lg }}>
+            <TextInput
+              label="العمر من"
+              placeholder="مثال: ١٣"
+              value={startAge}
+              onChangeText={setStartAge}
+              keyboardType="number-pad"
+            />
+            <TextInput
+              label="إلى"
+              placeholder="مثال: ٢٥"
+              value={endAge}
+              onChangeText={setEndAge}
+              keyboardType="number-pad"
+            />
           </View>
         )}
 
-        <Button title="Create Gap Period" onPress={onSubmit} loading={createGapPeriod.isPending} />
+        <Button
+          title="إضافة الفترة"
+          onPress={onSubmit}
+          loading={createGapPeriod.isPending}
+          fullWidth
+        />
       </ScrollView>
     </>
   );
