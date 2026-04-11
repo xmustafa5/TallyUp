@@ -2,17 +2,19 @@ import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { format, getDaysInMonth, getDay, parseISO } from 'date-fns';
+import { format as dfFormat, getDaysInMonth, getDay, parseISO } from 'date-fns';
 import { useCalendarMonth, useCalendarDayDetail } from '@/hooks/use-progress';
 import { useDateTracker, useMarkPrayers } from '@/hooks/use-daily-tracker';
 import { useLogMakeupForDay } from '@/hooks/use-makeup';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
-import { colors } from '@/constants/theme';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
 import { lightImpact, successNotification } from '@/lib/haptics';
 import type { CalendarDay } from '@/services/progress';
 import type { MarkPrayersPayload } from '@/services/daily-tracker';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS_AR = ['أحد', 'اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'];
 
 function CalendarGrid({
   year,
@@ -28,7 +30,7 @@ function CalendarGrid({
   const theme = colors.light;
   const daysInMonth = getDaysInMonth(new Date(year, month - 1));
   const firstDayOfWeek = getDay(new Date(year, month - 1, 1));
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayStr = dfFormat(new Date(), 'yyyy-MM-dd');
 
   const dayMap = new Map(days.map((d) => [d.date, d]));
 
@@ -36,31 +38,47 @@ function CalendarGrid({
     ...Array(firstDayOfWeek).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
-      return dayMap.get(dateStr) ?? {
-        date: dateStr,
-        prayedCount: 0,
-        makeupCount: 0,
-        isFinalized: false,
-        status: 'no-data' as const,
-      };
+      return (
+        dayMap.get(dateStr) ?? {
+          date: dateStr,
+          prayedCount: 0,
+          makeupCount: 0,
+          isFinalized: false,
+          status: 'no-data' as const,
+        }
+      );
     }),
   ];
 
-  const statusColor = (status: string) => {
+  const statusBgFg = (status: string) => {
     switch (status) {
-      case 'complete': return theme.success;
-      case 'partial': return theme.warning;
-      case 'missed': return theme.error;
-      default: return theme.textTertiary;
+      case 'complete':
+        return { bg: theme.accent, fg: '#FFFFFF' };
+      case 'partial':
+        return { bg: theme.accentLight, fg: theme.accent };
+      case 'missed':
+        return { bg: theme.errorLight, fg: theme.error };
+      default:
+        return { bg: 'transparent', fg: theme.text };
     }
   };
 
   return (
-    <View style={{ gap: 4 }}>
+    <View style={{ gap: 6 }}>
       <View style={{ flexDirection: 'row' }}>
-        {WEEKDAYS.map((d) => (
-          <View key={d} style={{ flex: 1, alignItems: 'center', paddingVertical: 4 }}>
-            <Text style={{ fontSize: 11, color: theme.textTertiary, fontWeight: '500' }}>
+        {WEEKDAYS_AR.map((d) => (
+          <View
+            key={d}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: 4 }}
+          >
+            <Text
+              style={{
+                ...typography.caption,
+                fontSize: 11,
+                color: theme.textTertiary,
+                fontWeight: '600',
+              }}
+            >
               {d}
             </Text>
           </View>
@@ -70,12 +88,13 @@ function CalendarGrid({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {cells.map((cell, i) => {
           if (!cell) {
-            return <View key={`empty-${i}`} style={{ width: '14.28%', height: 44 }} />;
+            return <View key={`empty-${i}`} style={{ width: '14.28%', height: 46 }} />;
           }
 
           const dayNum = parseISO(cell.date).getDate();
           const isToday = cell.date === todayStr;
           const isFuture = cell.status === 'future';
+          const { bg, fg } = statusBgFg(cell.status);
 
           return (
             <Pressable
@@ -87,7 +106,7 @@ function CalendarGrid({
               }}
               style={({ pressed }) => ({
                 width: '14.28%',
-                height: 44,
+                height: 46,
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: pressed ? 0.6 : isFuture ? 0.3 : 1,
@@ -95,37 +114,27 @@ function CalendarGrid({
             >
               <View
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
+                  width: 36,
+                  height: 36,
+                  borderRadius: radii.pill,
+                  backgroundColor: bg,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: isToday ? 1.5 : 0,
+                  borderWidth: isToday ? 2 : 0,
                   borderColor: isToday ? theme.primary : undefined,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    fontWeight: isToday ? '700' : '400',
-                    color: theme.text,
+                    fontWeight: isToday ? '700' : '600',
+                    color: bg === 'transparent' ? theme.text : fg,
                     fontVariant: ['tabular-nums'],
                   }}
                 >
-                  {dayNum}
+                  {format.toArabicDigits(dayNum)}
                 </Text>
               </View>
-              {cell.status !== 'no-data' && cell.status !== 'future' && (
-                <View
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: 3,
-                    backgroundColor: statusColor(cell.status),
-                    marginTop: -2,
-                  }}
-                />
-              )}
             </Pressable>
           );
         })}
@@ -142,8 +151,6 @@ function DayDetailDrawer({
   onClose: () => void;
 }) {
   const theme = colors.light;
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const isToday = date === todayStr;
 
   const { data: dayDetail, isLoading: detailLoading } = useCalendarDayDetail(date);
   const { data: tracker, isLoading: trackerLoading } = useDateTracker(
@@ -160,7 +167,7 @@ function DayDetailDrawer({
       const prayers: MarkPrayersPayload = { [key]: !current };
       markPrayers.mutate({ date, prayers });
     },
-    [tracker, date],
+    [tracker, date, markPrayers],
   );
 
   const handleLogMakeup = useCallback(
@@ -168,7 +175,7 @@ function DayDetailDrawer({
       successNotification();
       logMakeupForDay.mutate({ date, prayerType });
     },
-    [date],
+    [date, logMakeupForDay],
   );
 
   const isLoading = detailLoading || trackerLoading;
@@ -176,43 +183,38 @@ function DayDetailDrawer({
   const statusBadge = (status: string) => {
     switch (status) {
       case 'complete':
-        return { label: 'Fully made up', bg: theme.successLight, color: theme.success };
+        return { label: 'مكتمل', bg: theme.accentLight, color: theme.accent };
       case 'partial':
-        return { label: 'In progress', bg: theme.warningLight, color: theme.warning };
+        return { label: 'قيد التقدم', bg: theme.primaryLight, color: theme.primary };
       default:
-        return { label: 'Not yet made up', bg: theme.errorLight, color: theme.error };
+        return { label: 'لم يبدأ', bg: theme.errorLight, color: theme.error };
     }
   };
 
   return (
-    <Modal
-      visible
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <Pressable
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
+        style={{ flex: 1, backgroundColor: 'rgba(26,54,93,0.4)' }}
         onPress={onClose}
       />
       <View
         style={{
           backgroundColor: theme.background,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 40,
-          maxHeight: '70%',
+          borderTopLeftRadius: radii['2xl'],
+          borderTopRightRadius: radii['2xl'],
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing['4xl'],
+          maxHeight: '72%',
         }}
       >
-        <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
           <View
             style={{
-              width: 36,
+              width: 40,
               height: 4,
               borderRadius: 2,
-              backgroundColor: theme.border,
+              backgroundColor: theme.borderStrong,
             }}
           />
         </View>
@@ -222,11 +224,11 @@ function DayDetailDrawer({
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 16,
+            marginBottom: spacing.lg,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: '700', color: theme.text }}>
-            {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+          <Text style={[typography.h3, { color: theme.text }]}>
+            {dfFormat(parseISO(date), 'EEEE, MMMM d')}
           </Text>
           <Pressable onPress={onClose} style={{ padding: 4 }}>
             <Ionicons name="close" size={22} color={theme.textTertiary} />
@@ -238,8 +240,8 @@ function DayDetailDrawer({
             <ActivityIndicator size="large" color={theme.primary} />
           </View>
         ) : dayDetail?.isGapDay ? (
-          <ScrollView style={{ gap: 12 }} showsVerticalScrollIndicator={false}>
-            <View style={{ marginBottom: 12 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ marginBottom: spacing.md }}>
               {(() => {
                 const badge = statusBadge(dayDetail.status);
                 return (
@@ -247,12 +249,18 @@ function DayDetailDrawer({
                     style={{
                       alignSelf: 'flex-start',
                       backgroundColor: badge.bg,
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: radii.pill,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: badge.color }}>
+                    <Text
+                      style={{
+                        ...typography.caption,
+                        fontWeight: '700',
+                        color: badge.color,
+                      }}
+                    >
                       {badge.label}
                     </Text>
                   </View>
@@ -260,10 +268,15 @@ function DayDetailDrawer({
               })()}
             </View>
 
-            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-              Qadha Prayers
+            <Text
+              style={[
+                typography.h3,
+                { color: theme.text, marginBottom: spacing.sm, textAlign: 'right' },
+              ]}
+            >
+              صلوات القضاء
             </Text>
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: spacing.sm }}>
               {PRAYER_TYPES.map((type) => {
                 const key = type.toLowerCase() as keyof NonNullable<typeof dayDetail.prayers>;
                 const completed = dayDetail.prayers ? dayDetail.prayers[key] : false;
@@ -277,32 +290,40 @@ function DayDetailDrawer({
                     disabled={completed || isLogging}
                     onPress={() => handleLogMakeup(type)}
                     style={({ pressed }) => ({
-                      backgroundColor: completed ? theme.successLight : theme.card,
-                      borderRadius: 12,
+                      backgroundColor: theme.card,
+                      borderRadius: radii.lg,
                       padding: 14,
-                      flexDirection: 'row',
+                      flexDirection: 'row-reverse',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      opacity: pressed ? 0.7 : 1,
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                      gap: spacing.md,
+                      borderWidth: 1.5,
+                      borderColor: completed ? theme.accent : theme.border,
+                      opacity: pressed ? 0.75 : 1,
                     })}
                   >
+                    <PrayerIcon
+                      name={key as PrayerName}
+                      size={40}
+                      tone={completed ? 'gold' : 'muted'}
+                    />
                     <Text
                       style={{
-                        fontSize: 15,
-                        fontWeight: '500',
-                        color: completed ? theme.success : theme.text,
+                        ...typography.bodyLg,
+                        flex: 1,
+                        fontWeight: '700',
+                        color: theme.text,
+                        textAlign: 'right',
                       }}
                     >
-                      {PRAYER_NAMES[type].en}
+                      {PRAYER_NAMES[type].ar}
                     </Text>
                     {isLogging ? (
                       <ActivityIndicator size="small" color={theme.primary} />
                     ) : completed ? (
-                      <Ionicons name="checkmark-circle" size={22} color={theme.success} />
+                      <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
                     ) : (
-                      <Text style={{ fontSize: 12, color: theme.primary, fontWeight: '500' }}>
-                        Tap to log
+                      <Text style={[typography.caption, { color: theme.primary, fontWeight: '700' }]}>
+                        سجّل
                       </Text>
                     )}
                   </Pressable>
@@ -312,16 +333,21 @@ function DayDetailDrawer({
           </ScrollView>
         ) : tracker ? (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text, marginBottom: 8 }}>
-              Daily Prayers
+            <Text
+              style={[
+                typography.h3,
+                { color: theme.text, marginBottom: spacing.sm, textAlign: 'right' },
+              ]}
+            >
+              صلوات اليوم
             </Text>
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: spacing.sm }}>
               {PRAYER_TYPES.map((type) => {
                 const key = type.toLowerCase() as keyof typeof tracker;
                 const completed = tracker[key] as boolean;
                 const isToggling =
                   markPrayers.isPending &&
-                  markPrayers.variables?.prayers &&
+                  !!markPrayers.variables?.prayers &&
                   key in markPrayers.variables.prayers;
 
                 return (
@@ -330,32 +356,40 @@ function DayDetailDrawer({
                     onPress={() => handleTogglePrayer(type)}
                     disabled={isToggling}
                     style={({ pressed }) => ({
-                      backgroundColor: completed ? theme.successLight : theme.card,
-                      borderRadius: 12,
+                      backgroundColor: theme.card,
+                      borderRadius: radii.lg,
                       padding: 14,
-                      flexDirection: 'row',
+                      flexDirection: 'row-reverse',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      opacity: pressed ? 0.7 : 1,
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                      gap: spacing.md,
+                      borderWidth: 1.5,
+                      borderColor: completed ? theme.accent : theme.border,
+                      opacity: pressed ? 0.75 : 1,
                     })}
                   >
+                    <PrayerIcon
+                      name={key as PrayerName}
+                      size={40}
+                      tone={completed ? 'gold' : 'muted'}
+                    />
                     <Text
                       style={{
-                        fontSize: 15,
-                        fontWeight: '500',
-                        color: completed ? theme.success : theme.text,
+                        ...typography.bodyLg,
+                        flex: 1,
+                        fontWeight: '700',
+                        color: theme.text,
+                        textAlign: 'right',
                       }}
                     >
-                      {PRAYER_NAMES[type].en}
+                      {PRAYER_NAMES[type].ar}
                     </Text>
                     {isToggling ? (
                       <ActivityIndicator size="small" color={theme.primary} />
                     ) : (
                       <Ionicons
                         name={completed ? 'checkmark-circle' : 'ellipse-outline'}
-                        size={22}
-                        color={completed ? theme.success : theme.textTertiary}
+                        size={24}
+                        color={completed ? theme.accent : theme.textTertiary}
                       />
                     )}
                   </Pressable>
@@ -365,8 +399,8 @@ function DayDetailDrawer({
           </ScrollView>
         ) : (
           <View style={{ paddingVertical: 30, alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, color: theme.textSecondary }}>
-              No tracking data for this date.
+            <Text style={{ ...typography.body, color: theme.textSecondary }}>
+              لا توجد بيانات متابعة لهذا اليوم
             </Text>
           </View>
         )}
@@ -385,65 +419,82 @@ export default function CalendarScreen() {
   const { data: calendarDays } = useCalendarMonth(year, month);
 
   const prevMonth = () => {
-    if (month === 1) { setYear(year - 1); setMonth(12); }
-    else setMonth(month - 1);
+    if (month === 1) {
+      setYear(year - 1);
+      setMonth(12);
+    } else setMonth(month - 1);
   };
 
   const nextMonth = () => {
-    if (month === 12) { setYear(year + 1); setMonth(1); }
-    else setMonth(month + 1);
+    if (month === 12) {
+      setYear(year + 1);
+      setMonth(1);
+    } else setMonth(month + 1);
   };
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Calendar' }} />
+      <Stack.Screen options={{ title: 'التقويم' }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, gap: 20 }}
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Pressable onPress={prevMonth} style={{ padding: 8 }}>
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </Pressable>
-          <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>
-            {format(new Date(year, month - 1), 'MMMM yyyy')}
-          </Text>
-          <Pressable onPress={nextMonth} style={{ padding: 8 }}>
-            <Ionicons name="chevron-forward" size={20} color={theme.text} />
-          </Pressable>
-        </View>
+        <BrandCard>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: spacing.md,
+            }}
+          >
+            <Pressable onPress={prevMonth} style={{ padding: 8 }}>
+              <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+            </Pressable>
+            <Text style={[typography.h3, { color: theme.text }]}>
+              {dfFormat(new Date(year, month - 1), 'MMMM yyyy')}
+            </Text>
+            <Pressable onPress={nextMonth} style={{ padding: 8 }}>
+              <Ionicons name="chevron-back" size={20} color={theme.primary} />
+            </Pressable>
+          </View>
 
-        <View>
           <CalendarGrid
             year={year}
             month={month}
             days={calendarDays ?? []}
             onDayPress={setSelectedDate}
           />
-        </View>
+        </BrandCard>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: spacing.lg,
+          }}
+        >
           {[
-            { label: 'Complete', color: theme.success },
-            { label: 'Partial', color: theme.warning },
-            { label: 'Missed', color: theme.error },
+            { label: 'مكتمل', color: theme.accent },
+            { label: 'جزئي', color: theme.accentLight, fg: theme.accent },
+            { label: 'فائت', color: theme.errorLight, fg: theme.error },
           ].map((item) => (
-            <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View
+              key={item.label}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
               <View
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
                   backgroundColor: item.color,
                 }}
               />
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>{item.label}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                {item.label}
+              </Text>
             </View>
           ))}
         </View>

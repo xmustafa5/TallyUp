@@ -90,16 +90,16 @@ export default function RegisterScreen() {
               color: theme.text,
             }}
           >
-            Create Account
+            إنشاء حساب
           </Text>
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               color: theme.textSecondary,
               textAlign: 'center',
             }}
           >
-            Start your prayer makeup journey
+            ابدأ رحلتك في قضاء الصلوات
           </Text>
         </View>
 
@@ -109,8 +109,8 @@ export default function RegisterScreen() {
             name="name"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Name"
-                placeholder="Your name"
+                label="الاسم"
+                placeholder="اسمك الكامل"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -126,7 +126,7 @@ export default function RegisterScreen() {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Email"
+                label="البريد الإلكتروني"
                 placeholder="your@email.com"
                 value={value}
                 onChangeText={onChange}
@@ -145,8 +145,8 @@ export default function RegisterScreen() {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Password"
-                placeholder="At least 8 characters"
+                label="كلمة المرور"
+                placeholder="٨ أحرف على الأقل"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -163,8 +163,8 @@ export default function RegisterScreen() {
             name="confirmPassword"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Confirm Password"
-                placeholder="Repeat your password"
+                label="تأكيد كلمة المرور"
+                placeholder="أعد كتابة كلمة المرور"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -176,9 +176,10 @@ export default function RegisterScreen() {
           />
 
           <Button
-            title="Create Account"
+            title="إنشاء حساب"
             onPress={handleSubmit(onSubmit)}
             loading={loading}
+            fullWidth
           />
         </View>
 
@@ -186,18 +187,18 @@ export default function RegisterScreen() {
           style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}
         >
           <Text style={{ fontSize: 14, color: theme.textSecondary }}>
-            Already have an account?
+            لديك حساب بالفعل؟
           </Text>
           <Link href="/(auth)/login" asChild>
             <Pressable>
               <Text
                 style={{
                   fontSize: 14,
-                  fontWeight: '600',
+                  fontWeight: '700',
                   color: theme.primary,
                 }}
               >
-                Sign In
+                تسجيل الدخول
               </Text>
             </Pressable>
           </Link>

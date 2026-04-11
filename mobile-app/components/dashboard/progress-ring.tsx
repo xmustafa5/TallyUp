@@ -1,26 +1,44 @@
 import { View, Text } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
-import { colors } from '@/constants/theme';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { colors, format, typography } from '@/constants/theme';
 
 interface ProgressRingProps {
   percentage: number;
   size?: number;
   strokeWidth?: number;
+  centerValue?: string | number;
+  centerLabel?: string;
 }
 
 export function ProgressRing({
   percentage,
-  size = 180,
-  strokeWidth = 14,
+  size = 200,
+  strokeWidth = 16,
+  centerValue,
+  centerLabel,
 }: ProgressRingProps) {
   const theme = colors.light;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const pct = Math.max(0, Math.min(100, percentage));
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
+
+  const display =
+    centerValue !== undefined
+      ? typeof centerValue === 'number'
+        ? format.toArabicDigits(centerValue)
+        : centerValue
+      : `${format.toArabicDigits(Math.round(pct))}٪`;
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size}>
+        <Defs>
+          <LinearGradient id="ringGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor="#E8BF5A" />
+            <Stop offset="100%" stopColor="#A67716" />
+          </LinearGradient>
+        </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -33,7 +51,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={theme.primary}
+          stroke="url(#ringGold)"
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}
@@ -47,23 +65,29 @@ export function ProgressRing({
         style={{
           position: 'absolute',
           alignItems: 'center',
-          gap: 2,
+          gap: 4,
         }}
       >
         <Text
           selectable
           style={{
-            fontSize: 36,
-            fontWeight: '700',
+            ...typography.display,
             color: theme.text,
             fontVariant: ['tabular-nums'],
           }}
         >
-          {Math.round(percentage)}%
+          {display}
         </Text>
-        <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-          completed
-        </Text>
+        {centerLabel && (
+          <Text
+            style={{
+              ...typography.caption,
+              color: theme.textSecondary,
+            }}
+          >
+            {centerLabel}
+          </Text>
+        )}
       </View>
     </View>
   );

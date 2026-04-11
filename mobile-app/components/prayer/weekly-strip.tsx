@@ -1,7 +1,7 @@
 import { ScrollView, View, Text } from 'react-native';
-import { format, parseISO } from 'date-fns';
+import { format as dfFormat, parseISO } from 'date-fns';
 import type { DailyTrackerData } from '@/services/daily-tracker';
-import { colors } from '@/constants/theme';
+import { colors, format, radii, typography } from '@/constants/theme';
 
 interface WeeklyStripProps {
   weekData: DailyTrackerData[];
@@ -15,10 +15,7 @@ export function WeeklyStrip({ weekData, today }: WeeklyStripProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        gap: 8,
-        paddingHorizontal: 4,
-      }}
+      contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}
     >
       {weekData.map((day) => {
         const completed = [
@@ -29,37 +26,40 @@ export function WeeklyStrip({ weekData, today }: WeeklyStripProps) {
           day.isha,
         ].filter(Boolean).length;
         const isToday = day.date === today;
-        const bgColor =
-          completed === 5
-            ? theme.successLight
-            : completed > 0
-              ? theme.warningLight
-              : theme.surfaceAlt;
-        const textColor =
-          completed === 5
-            ? theme.success
-            : completed > 0
-              ? theme.warning
-              : theme.textTertiary;
+        const full = completed === 5;
+        const partial = completed > 0 && completed < 5;
+
+        const bg = full
+          ? theme.accent
+          : partial
+            ? theme.accentLight
+            : theme.surfaceAlt;
+        const fg = full
+          ? '#FFFFFF'
+          : partial
+            ? theme.accent
+            : theme.textTertiary;
 
         return (
           <View
             key={day.date}
-            style={{
-              alignItems: 'center',
-              gap: 4,
-              width: 44,
-            }}
+            style={{ alignItems: 'center', gap: 6, width: 46 }}
           >
-            <Text style={{ fontSize: 11, color: theme.textSecondary }}>
-              {format(parseISO(day.date), 'EEE')}
+            <Text
+              style={{
+                ...typography.caption,
+                fontSize: 11,
+                color: theme.textSecondary,
+              }}
+            >
+              {dfFormat(parseISO(day.date), 'EEE')}
             </Text>
             <View
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: bgColor,
+                width: 40,
+                height: 40,
+                borderRadius: radii.pill,
+                backgroundColor: bg,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: isToday ? 2 : 0,
@@ -69,22 +69,14 @@ export function WeeklyStrip({ weekData, today }: WeeklyStripProps) {
               <Text
                 style={{
                   fontSize: 14,
-                  fontWeight: '600',
-                  color: textColor,
+                  fontWeight: '700',
+                  color: fg,
                   fontVariant: ['tabular-nums'],
                 }}
               >
-                {completed}
+                {format.toArabicDigits(completed)}
               </Text>
             </View>
-            <Text
-              style={{
-                fontSize: 10,
-                color: theme.textTertiary,
-              }}
-            >
-              /5
-            </Text>
           </View>
         );
       })}

@@ -1,10 +1,18 @@
 import { View, Text, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
-import { useMakeupStats, useLogMakeup, useMakeupHistory, useUndoMakeup } from '@/hooks/use-makeup';
+import { format as dfFormat, parseISO } from 'date-fns';
+import {
+  useMakeupStats,
+  useLogMakeup,
+  useMakeupHistory,
+  useUndoMakeup,
+} from '@/hooks/use-makeup';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
-import { colors } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { SectionHeader } from '@/components/ui/section-header';
+import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
 import { successNotification, warningNotification } from '@/lib/haptics';
 import type { MakeupLogEntry } from '@/services/makeup';
 
@@ -24,73 +32,68 @@ function PrayerStatRow({
   const theme = colors.light;
   const total = completed + remaining;
   const pct = total > 0 ? (completed / total) * 100 : 0;
+  const prayerKey = type.toLowerCase() as PrayerName;
 
   return (
-    <View
-      style={{
-        backgroundColor: theme.card,
-        borderRadius: 14,
-        borderCurve: 'continuous',
-        padding: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-      }}
-    >
-      <View style={{ flex: 1, gap: 6 }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
-          {PRAYER_NAMES[type as keyof typeof PRAYER_NAMES]?.en ?? type}
-        </Text>
-        <View
-          style={{
-            height: 5,
-            backgroundColor: theme.surfaceAlt,
-            borderRadius: 3,
-          }}
-        >
+    <BrandCard padding={16}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <PrayerIcon name={prayerKey} size={48} tone="gold" />
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={[typography.h3, { color: theme.text, textAlign: 'right' }]}>
+            {PRAYER_NAMES[type as keyof typeof PRAYER_NAMES]?.ar ?? type}
+          </Text>
           <View
             style={{
-              height: 5,
-              backgroundColor: theme.success,
-              borderRadius: 3,
-              width: `${Math.min(pct, 100)}%`,
+              height: 6,
+              backgroundColor: theme.surfaceAlt,
+              borderRadius: radii.pill,
+              overflow: 'hidden',
             }}
-          />
+          >
+            <View
+              style={{
+                height: '100%',
+                backgroundColor: theme.accent,
+                borderRadius: radii.pill,
+                width: `${Math.min(pct, 100)}%`,
+              }}
+            />
+          </View>
+          <Text
+            style={{
+              ...typography.caption,
+              color: theme.textSecondary,
+              fontVariant: ['tabular-nums'],
+              textAlign: 'right',
+            }}
+          >
+            {format.toArabicDigits(remaining)} متبقية
+          </Text>
         </View>
-        <Text
-          style={{
-            fontSize: 12,
-            color: theme.textSecondary,
-            fontVariant: ['tabular-nums'],
+        <Pressable
+          onPress={() => {
+            successNotification();
+            onLog();
           }}
+          disabled={logging || remaining === 0}
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            borderRadius: radii.pill,
+            backgroundColor: remaining === 0 ? theme.surfaceAlt : theme.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.75 : logging ? 0.5 : 1,
+          })}
         >
-          {remaining.toLocaleString()} left
-        </Text>
+          <Ionicons
+            name="add"
+            size={22}
+            color={remaining === 0 ? theme.textTertiary : '#FFFFFF'}
+          />
+        </Pressable>
       </View>
-      <Pressable
-        onPress={() => {
-          successNotification();
-          onLog();
-        }}
-        disabled={logging || remaining === 0}
-        style={({ pressed }) => ({
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: remaining === 0 ? theme.surfaceAlt : theme.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: pressed ? 0.7 : logging ? 0.5 : 1,
-        })}
-      >
-        <Ionicons
-          name="add"
-          size={22}
-          color={remaining === 0 ? theme.textTertiary : '#FFFFFF'}
-        />
-      </Pressable>
-    </View>
+    </BrandCard>
   );
 }
 
@@ -106,13 +109,13 @@ function HistoryItem({
     item.source === 'MANUAL'
       ? theme.primaryLight
       : item.source === 'DAILY_MISSED'
-        ? theme.warningLight
+        ? theme.accentLight
         : theme.surfaceAlt;
   const sourceColor =
     item.source === 'MANUAL'
       ? theme.primary
       : item.source === 'DAILY_MISSED'
-        ? theme.warning
+        ? theme.accent
         : theme.textSecondary;
 
   return (
@@ -124,28 +127,32 @@ function HistoryItem({
         gap: 12,
       }}
     >
+      <PrayerIcon
+        name={item.prayerType.toLowerCase() as PrayerName}
+        size={36}
+        tone="muted"
+      />
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '500', color: theme.text }}>
-            {PRAYER_NAMES[item.prayerType as keyof typeof PRAYER_NAMES]?.en ??
+          <Text style={[typography.body, { color: theme.text, fontWeight: '700' }]}>
+            {PRAYER_NAMES[item.prayerType as keyof typeof PRAYER_NAMES]?.ar ??
               item.prayerType}
           </Text>
           <View
             style={{
               backgroundColor: sourceBg,
-              paddingHorizontal: 6,
+              paddingHorizontal: 8,
               paddingVertical: 2,
-              borderRadius: 6,
-              borderCurve: 'continuous',
+              borderRadius: radii.sm,
             }}
           >
-            <Text style={{ fontSize: 10, fontWeight: '500', color: sourceColor }}>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: sourceColor }}>
               {item.source.replace('_', ' ')}
             </Text>
           </View>
         </View>
-        <Text style={{ fontSize: 12, color: theme.textTertiary }}>
-          {format(parseISO(item.completedAt), 'MMM d, h:mm a')}
+        <Text style={{ ...typography.caption, color: theme.textTertiary }}>
+          {dfFormat(parseISO(item.completedAt), 'MMM d, h:mm a')}
         </Text>
       </View>
       <Pressable
@@ -153,10 +160,7 @@ function HistoryItem({
           warningNotification();
           onUndo();
         }}
-        style={({ pressed }) => ({
-          padding: 6,
-          opacity: pressed ? 0.5 : 1,
-        })}
+        style={({ pressed }) => ({ padding: 6, opacity: pressed ? 0.5 : 1 })}
       >
         <Ionicons name="arrow-undo" size={18} color={theme.textTertiary} />
       </Pressable>
@@ -173,62 +177,65 @@ export default function MakeupScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Makeup Prayers' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: theme.background }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
         }
         contentContainerStyle={{
-          padding: 20,
-          gap: 20,
-          paddingBottom: 40,
+          padding: spacing.xl,
+          gap: spacing.xl,
+          paddingBottom: spacing['4xl'],
         }}
       >
+        <Text style={[typography.h2, { color: theme.text }]}>صلوات القضاء</Text>
+
         {stats && (
           <>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'center',
-                gap: 24,
-              }}
-            >
-              <View style={{ alignItems: 'center' }}>
-                <Text
-                  selectable
-                  style={{
-                    fontSize: 22,
-                    fontWeight: '700',
-                    color: theme.success,
-                    fontVariant: ['tabular-nums'],
-                  }}
-                >
-                  {stats.totalCompleted.toLocaleString()}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                  Completed
-                </Text>
+            <BrandCard>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-around',
+                }}
+              >
+                <View style={{ alignItems: 'center', gap: 2 }}>
+                  <Text
+                    selectable
+                    style={{
+                      ...typography.h1,
+                      color: theme.accent,
+                      fontVariant: ['tabular-nums'],
+                    }}
+                  >
+                    {format.toArabicDigits(stats.totalCompleted)}
+                  </Text>
+                  <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                    منجزة
+                  </Text>
+                </View>
+                <View style={{ width: 1, backgroundColor: theme.border }} />
+                <View style={{ alignItems: 'center', gap: 2 }}>
+                  <Text
+                    selectable
+                    style={{
+                      ...typography.h1,
+                      color: theme.primary,
+                      fontVariant: ['tabular-nums'],
+                    }}
+                  >
+                    {format.toArabicDigits(stats.totalRemaining)}
+                  </Text>
+                  <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                    متبقية
+                  </Text>
+                </View>
               </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text
-                  selectable
-                  style={{
-                    fontSize: 22,
-                    fontWeight: '700',
-                    color: theme.text,
-                    fontVariant: ['tabular-nums'],
-                  }}
-                >
-                  {stats.totalRemaining.toLocaleString()}
-                </Text>
-                <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                  Remaining
-                </Text>
-              </View>
-            </View>
+            </BrandCard>
 
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: spacing.md }}>
               {PRAYER_TYPES.map((type) => {
                 const key = type.toLowerCase() as keyof typeof stats.perType;
                 const stat = stats.perType[key];
@@ -241,8 +248,7 @@ export default function MakeupScreen() {
                     remaining={stat.remaining}
                     onLog={() => logMakeup.mutate(type)}
                     logging={
-                      logMakeup.isPending &&
-                      logMakeup.variables === type
+                      logMakeup.isPending && logMakeup.variables === type
                     }
                   />
                 );
@@ -252,21 +258,8 @@ export default function MakeupScreen() {
         )}
 
         {history && history.length > 0 && (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 16,
-              gap: 4,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Text
-              style={{ fontSize: 15, fontWeight: '600', color: theme.text }}
-            >
-              Recent History
-            </Text>
+          <BrandCard>
+            <SectionHeader title="السجل الأخير" />
             {history.slice(0, 20).map((item) => (
               <HistoryItem
                 key={item.id}
@@ -274,7 +267,7 @@ export default function MakeupScreen() {
                 onUndo={() => undoMakeup.mutate(item.id)}
               />
             ))}
-          </View>
+          </BrandCard>
         )}
       </ScrollView>
     </>

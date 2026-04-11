@@ -1,37 +1,52 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '@/constants/theme';
 
 export default function TabLayout() {
+  const theme = colors.light;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: theme.tabBarActive,
+        tabBarInactiveTintColor: theme.tabBarInactive,
+        tabBarStyle: {
+          backgroundColor: theme.tabBar,
+          borderTopColor: theme.tabBarBorder,
+          borderTopWidth: 1,
+          height: 72,
+          paddingTop: 8,
+          paddingBottom: 12,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
       }}
     >
       <Tabs.Screen
         name="(home)"
         options={{
-          title: 'Home',
+          title: 'الرئيسية',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name="moon" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="(today)"
         options={{
-          title: 'Today',
+          title: 'اليوم',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkmark-circle" size={size} color={color} />
+            <Ionicons name="sunny" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="(makeup)"
         options={{
-          title: 'Makeup',
+          title: 'القضاء',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="refresh-circle" size={size} color={color} />
           ),
@@ -40,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="(more)"
         options={{
-          title: 'More',
+          title: 'إعدادات',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal-circle" size={size} color={color} />
           ),

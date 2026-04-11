@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,24 +76,37 @@ export default function LoginScreen() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ gap: 8, alignItems: 'center' }}>
+        <View style={{ gap: 12, alignItems: 'center' }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 24,
+              borderCurve: 'continuous',
+              backgroundColor: theme.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="moon" size={36} color={theme.primary} />
+          </View>
           <Text
             style={{
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: '700',
               color: theme.text,
             }}
           >
-            Qatha
+            متتبع صلاة القضاء
           </Text>
           <Text
             style={{
-              fontSize: 16,
+              fontSize: 15,
               color: theme.textSecondary,
               textAlign: 'center',
             }}
           >
-            Track and make up your missed prayers
+            احسب وتابع صلواتك الفائتة
           </Text>
         </View>
 
@@ -102,7 +116,7 @@ export default function LoginScreen() {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Email"
+                label="البريد الإلكتروني"
                 placeholder="your@email.com"
                 value={value}
                 onChangeText={onChange}
@@ -121,8 +135,8 @@ export default function LoginScreen() {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                label="Password"
-                placeholder="Enter your password"
+                label="كلمة المرور"
+                placeholder="••••••••"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -135,9 +149,10 @@ export default function LoginScreen() {
           />
 
           <Button
-            title="Sign In"
+            title="تسجيل الدخول"
             onPress={handleSubmit(onSubmit)}
             loading={loading}
+            fullWidth
           />
         </View>
 
@@ -145,18 +160,18 @@ export default function LoginScreen() {
           style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}
         >
           <Text style={{ fontSize: 14, color: theme.textSecondary }}>
-            Don't have an account?
+            ليس لديك حساب؟
           </Text>
           <Link href="/(auth)/register" asChild>
             <Pressable>
               <Text
                 style={{
                   fontSize: 14,
-                  fontWeight: '600',
+                  fontWeight: '700',
                   color: theme.primary,
                 }}
               >
-                Sign Up
+                سجّل الآن
               </Text>
             </Pressable>
           </Link>

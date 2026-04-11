@@ -1,113 +1,119 @@
 import { View, Text } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const theme = colors.light;
+
+  const features = [
+    'احسب عدد الصلوات الفائتة',
+    'تابع صلواتك اليومية',
+    'سجّل صلوات القضاء بلمسة واحدة',
+    'شاهد تقدّمك عبر الزمن',
+  ];
 
   return (
     <View
       style={{
         flex: 1,
         backgroundColor: theme.background,
-        paddingHorizontal: 24,
+        paddingHorizontal: spacing['2xl'],
         paddingTop: insets.top + 60,
-        paddingBottom: insets.bottom + 24,
+        paddingBottom: insets.bottom + spacing['2xl'],
         justifyContent: 'space-between',
       }}
     >
-      <View style={{ flex: 1, justifyContent: 'center', gap: 24 }}>
-        <View
-          style={{ alignItems: 'center', gap: 16 }}
-        >
+      <View style={{ flex: 1, justifyContent: 'center', gap: spacing['2xl'] }}>
+        <View style={{ alignItems: 'center', gap: spacing.lg }}>
           <View
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 20,
+              width: 96,
+              height: 96,
+              borderRadius: radii['2xl'],
               borderCurve: 'continuous',
               backgroundColor: theme.primaryLight,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 36 }}>&#x1F54C;</Text>
+            <Ionicons name="moon" size={44} color={theme.primary} />
           </View>
           <Text
             style={{
-              fontSize: 34,
-              fontWeight: '700',
+              ...typography.h1,
               color: theme.text,
               textAlign: 'center',
             }}
           >
-            Welcome to Qatha
+            متتبع صلاة القضاء
           </Text>
-        </View>
-
-        <View
-          style={{ gap: 20 }}
-        >
           <Text
             style={{
-              fontSize: 17,
+              ...typography.body,
               color: theme.textSecondary,
               textAlign: 'center',
               lineHeight: 24,
             }}
           >
-            Track and make up your missed prayers systematically. We'll help you
-            calculate what you owe and track your progress.
+            احسب، تابع، واقضِ صلواتك الفائتة بخطة منظمة ورحيمة.
           </Text>
+        </View>
 
-          <View style={{ gap: 12 }}>
-            {[
-              'Calculate your missed prayers',
-              'Track daily prayers',
-              'Log makeup prayers with one tap',
-              'See your progress over time',
-            ].map((item, index) => (
+        <View style={{ gap: spacing.md }}>
+          {features.map((item, index) => (
+            <View
+              key={item}
+              style={{
+                flexDirection: 'row-reverse',
+                alignItems: 'center',
+                gap: spacing.md,
+                paddingVertical: spacing.sm,
+              }}
+            >
               <View
-                key={item}
                 style={{
-                  flexDirection: 'row',
+                  width: 32,
+                  height: 32,
+                  borderRadius: radii.pill,
+                  backgroundColor: theme.accentLight,
                   alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 8,
+                  justifyContent: 'center',
                 }}
               >
-                <View
+                <Text
                   style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: theme.successLight,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    color: theme.accent,
+                    fontSize: 14,
+                    fontWeight: '700',
                   }}
                 >
-                  <Text style={{ color: theme.success, fontSize: 14, fontWeight: '600' }}>
-                    {index + 1}
-                  </Text>
-                </View>
-                <Text style={{ fontSize: 15, color: theme.text, flex: 1 }}>
-                  {item}
+                  {index + 1}
                 </Text>
               </View>
-            ))}
-          </View>
+              <Text
+                style={{
+                  ...typography.bodyLg,
+                  color: theme.text,
+                  flex: 1,
+                  textAlign: 'right',
+                }}
+              >
+                {item}
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
 
-      <View>
-        <Button
-          title="Get Started"
-          onPress={() => router.push('/(onboarding)/setup')}
-        />
-      </View>
+      <Button
+        title="ابدأ الآن"
+        onPress={() => router.push('/(onboarding)/setup')}
+        fullWidth
+      />
     </View>
   );
 }

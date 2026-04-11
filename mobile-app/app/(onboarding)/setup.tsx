@@ -53,17 +53,19 @@ export default function SetupScreen() {
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <View
-        style={{ gap: 8 }}
-      >
-        <Text
-          style={{ fontSize: 28, fontWeight: '700', color: theme.text }}
-        >
-          About You
+      <View style={{ gap: 8 }}>
+        <Text style={{ fontSize: 28, fontWeight: '700', color: theme.text, textAlign: 'right' }}>
+          معلوماتك
         </Text>
-        <Text style={{ fontSize: 16, color: theme.textSecondary, lineHeight: 22 }}>
-          We need your date of birth to calculate missed prayers. Puberty age
-          helps determine when prayer became obligatory.
+        <Text
+          style={{
+            fontSize: 15,
+            color: theme.textSecondary,
+            lineHeight: 22,
+            textAlign: 'right',
+          }}
+        >
+          نحتاج تاريخ ميلادك لحساب الصلوات الفائتة. عمر البلوغ يحدد متى أصبحت الصلاة واجبة.
         </Text>
       </View>
 
@@ -72,7 +74,7 @@ export default function SetupScreen() {
       >
         <View style={{ gap: 8 }}>
           <TextInput
-            label="Date of Birth"
+            label="تاريخ الميلاد"
             placeholder="YYYY-MM-DD"
             value={birthdateText}
             onChangeText={setBirthdateText}
@@ -81,12 +83,12 @@ export default function SetupScreen() {
 
         <View style={{ gap: 8 }}>
           <Text
-            style={{ fontSize: 14, fontWeight: '500', color: theme.text }}
+            style={{ fontSize: 14, fontWeight: '600', color: theme.text, textAlign: 'right' }}
           >
-            Age of Puberty (optional)
+            عمر البلوغ (اختياري)
           </Text>
-          <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-            When prayer became obligatory (typically 9-17)
+          <Text style={{ fontSize: 13, color: theme.textSecondary, textAlign: 'right' }}>
+            متى أصبحت الصلاة واجبة عليك (عادة ٩–١٧)
           </Text>
           <View
             style={{
@@ -127,7 +129,7 @@ export default function SetupScreen() {
       </View>
 
       <View>
-        <Button title="Continue" onPress={onSubmit} loading={loading} />
+        <Button title="متابعة" onPress={onSubmit} loading={loading} fullWidth />
       </View>
     </ScrollView>
   );

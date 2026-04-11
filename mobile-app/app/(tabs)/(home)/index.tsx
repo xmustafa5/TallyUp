@@ -3,11 +3,17 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDashboard } from '@/hooks/use-progress';
 import { useTodayProgress } from '@/hooks/use-schedule';
+import { useTodayTracker, useMarkPrayers } from '@/hooks/use-daily-tracker';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
-import { TodayMiniStrip } from '@/components/dashboard/today-mini-strip';
 import { StreakCard } from '@/components/dashboard/streak-card';
-import { colors } from '@/constants/theme';
+import { BrandCard } from '@/components/ui/brand-card';
+import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
+import { Button } from '@/components/ui/button';
+import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
+import { lightImpact } from '@/lib/haptics';
+import { format as dfFormat } from 'date-fns';
 
 export default function DashboardScreen() {
   const theme = colors.light;
@@ -15,244 +21,369 @@ export default function DashboardScreen() {
   const { data: dashboard, isLoading, refetch } = useDashboard();
   const { data: todayProgress } = useTodayProgress();
 
-  const quickActions = [
-    { title: 'Gap Periods', icon: 'time' as const, route: '/(tabs)/(more)/gap-periods' },
-    { title: 'Calendar', icon: 'calendar' as const, route: '/(tabs)/(more)/calendar' },
-    { title: 'Goals', icon: 'trophy' as const, route: '/(tabs)/(more)/schedule' },
-  ];
+  const today = dfFormat(new Date(), 'yyyy-MM-dd');
+  const { data: dailyTracker } = useTodayTracker();
+  const markPrayers = useMarkPrayers();
+
+  const togglePrayer = (key: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
+    if (!dailyTracker) return;
+    lightImpact();
+    markPrayers.mutate({
+      date: today,
+      prayers: { [key]: !dailyTracker[key] },
+    });
+  };
+
+  const completedToday = dailyTracker
+    ? [
+        dailyTracker.fajr,
+        dailyTracker.dhuhr,
+        dailyTracker.asr,
+        dailyTracker.maghrib,
+        dailyTracker.isha,
+      ].filter(Boolean).length
+    : 0;
+  const todayPct = Math.round((completedToday / 5) * 100);
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Dashboard' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
         }
+        style={{ backgroundColor: theme.background }}
         contentContainerStyle={{
-          padding: 20,
-          gap: 20,
-          paddingBottom: 40,
+          padding: spacing.xl,
+          gap: spacing.xl,
+          paddingBottom: spacing['4xl'],
         }}
       >
-        <View>
-          <Text
-            style={{ fontSize: 16, color: theme.textSecondary }}
-          >
-            Peace be upon you
-          </Text>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: theme.text }}>
-            {userName}
-          </Text>
-        </View>
-
         <View
-          style={{ alignItems: 'center', gap: 16, paddingVertical: 8 }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <ProgressRing
-            percentage={dashboard?.completionPercentage ?? 0}
-          />
-          <View style={{ flexDirection: 'row', gap: 24 }}>
-            <View style={{ alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            {userName ? (
               <Text
-                selectable
-                style={{
-                  fontSize: 20,
-                  fontWeight: '700',
-                  color: theme.text,
-                  fontVariant: ['tabular-nums'],
-                }}
+                style={[typography.caption, { color: theme.textSecondary }]}
               >
-                {(dashboard?.totalRemaining ?? 0).toLocaleString()}
+                السلام عليكم
               </Text>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                Remaining
-              </Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Text
-                selectable
-                style={{
-                  fontSize: 20,
-                  fontWeight: '700',
-                  color: theme.success,
-                  fontVariant: ['tabular-nums'],
-                }}
-              >
-                {(dashboard?.totalCompleted ?? 0).toLocaleString()}
-              </Text>
-              <Text style={{ fontSize: 12, color: theme.textSecondary }}>
-                Completed
-              </Text>
-            </View>
+            ) : null}
+            <Text style={[typography.h2, { color: theme.text }]}>
+              متتبع صلاة القضاء
+            </Text>
+          </View>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radii.pill,
+              backgroundColor: theme.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="moon" size={22} color={theme.primary} />
           </View>
         </View>
 
-        <View>
-          <StreakCard
-            currentStreak={dashboard?.streak?.currentStreak ?? 0}
-            longestStreak={dashboard?.streak?.longestStreak ?? 0}
+        <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
+          <ProgressRing
+            percentage={dashboard?.completionPercentage ?? 0}
+            centerValue={dashboard?.totalRemaining ?? 0}
+            centerLabel="صلاة متبقية"
           />
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: spacing['3xl'],
+              marginTop: spacing.lg,
+            }}
+          >
+            <StatBlock
+              value={dashboard?.totalCompleted ?? 0}
+              label="منجزة"
+              tone="accent"
+            />
+            <View
+              style={{
+                width: 1,
+                backgroundColor: theme.border,
+              }}
+            />
+            <StatBlock
+              value={dashboard?.totalRemaining ?? 0}
+              label="متبقية"
+              tone="primary"
+            />
+          </View>
         </View>
 
-        <View>
-          <TodayMiniStrip todayStatus={dashboard?.todayStatus ?? null} />
+        <BrandCard padding={0}>
+          <View style={{ padding: spacing.lg, gap: spacing.sm }}>
+            {PRAYER_TYPES.map((type, idx) => {
+              const key = type.toLowerCase() as 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+              const done = dailyTracker ? dailyTracker[key] : false;
+              return (
+                <Pressable
+                  key={type}
+                  onPress={() => togglePrayer(key)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.md,
+                    paddingVertical: spacing.md,
+                    borderBottomWidth: idx < PRAYER_TYPES.length - 1 ? 1 : 0,
+                    borderBottomColor: theme.border,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 7,
+                      borderWidth: 2,
+                      borderColor: done ? theme.accent : theme.borderStrong,
+                      backgroundColor: done ? theme.accent : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {done && (
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    )}
+                  </View>
+                  <Text
+                    style={{
+                      ...typography.bodyLg,
+                      flex: 1,
+                      fontWeight: '700',
+                      color: theme.text,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {PRAYER_NAMES[type].ar}
+                  </Text>
+                  <PrayerIcon
+                    name={key as PrayerName}
+                    size={40}
+                    tone={done ? 'gold' : 'muted'}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+          <View
+            style={{
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.lg,
+              gap: spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
+                style={[typography.caption, { color: theme.textSecondary }]}
+              >
+                تقدّم اليوم
+              </Text>
+              <Text
+                style={{
+                  ...typography.caption,
+                  color: theme.accent,
+                  fontWeight: '700',
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                {format.toArabicDigits(todayPct)}٪ مكتملة
+              </Text>
+            </View>
+            <View
+              style={{
+                height: 8,
+                backgroundColor: theme.surfaceAlt,
+                borderRadius: radii.pill,
+                overflow: 'hidden',
+              }}
+            >
+              <View
+                style={{
+                  height: '100%',
+                  width: `${todayPct}%`,
+                  backgroundColor: theme.accent,
+                  borderRadius: radii.pill,
+                }}
+              />
+            </View>
+          </View>
+        </BrandCard>
+
+        <StreakCard
+          currentStreak={dashboard?.streak?.currentStreak ?? 0}
+          longestStreak={dashboard?.streak?.longestStreak ?? 0}
+          variant="pill"
+        />
+
+        <View style={{ flexDirection: 'row-reverse', gap: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="إضافة قضاء"
+              variant="primary"
+              onPress={() => router.push('/(tabs)/(makeup)')}
+              fullWidth
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="سجل القضاء"
+              variant="secondary"
+              onPress={() => router.push('/(tabs)/(more)/calendar')}
+              fullWidth
+            />
+          </View>
         </View>
 
         {todayProgress && (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 16,
-              gap: 10,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Text
-              style={{ fontSize: 15, fontWeight: '600', color: theme.text }}
-            >
-              Goal Progress
+          <BrandCard>
+            <Text style={[typography.h3, { color: theme.text, marginBottom: spacing.md }]}>
+              الأهداف
             </Text>
-            <View style={{ gap: 8 }}>
-              <View style={{ gap: 4 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-                    Daily
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: theme.textSecondary,
-                      fontVariant: ['tabular-nums'],
-                    }}
-                  >
-                    {todayProgress.dailyCompleted}/{todayProgress.dailyGoal}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    height: 6,
-                    backgroundColor: theme.surfaceAlt,
-                    borderRadius: 3,
-                  }}
-                >
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: theme.primary,
-                      borderRadius: 3,
-                      width: `${Math.min(todayProgress.dailyPercentage, 100)}%`,
-                    }}
-                  />
-                </View>
-              </View>
-              <View style={{ gap: 4 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Text style={{ fontSize: 13, color: theme.textSecondary }}>
-                    Weekly
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: theme.textSecondary,
-                      fontVariant: ['tabular-nums'],
-                    }}
-                  >
-                    {todayProgress.weeklyCompleted}/{todayProgress.weeklyGoal}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    height: 6,
-                    backgroundColor: theme.surfaceAlt,
-                    borderRadius: 3,
-                  }}
-                >
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: theme.success,
-                      borderRadius: 3,
-                      width: `${Math.min(todayProgress.weeklyPercentage, 100)}%`,
-                    }}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
+            <GoalBar
+              label="يومي"
+              completed={todayProgress.dailyCompleted}
+              goal={todayProgress.dailyGoal}
+              percentage={todayProgress.dailyPercentage}
+              color={theme.accent}
+            />
+            <View style={{ height: spacing.md }} />
+            <GoalBar
+              label="أسبوعي"
+              completed={todayProgress.weeklyCompleted}
+              goal={todayProgress.weeklyGoal}
+              percentage={todayProgress.weeklyPercentage}
+              color={theme.primary}
+            />
+          </BrandCard>
         )}
 
         {dashboard?.milestone && (
           <View
             style={{
               backgroundColor: theme.primaryLight,
-              borderRadius: 16,
+              borderRadius: radii.xl,
               borderCurve: 'continuous',
-              padding: 16,
-              flexDirection: 'row',
+              padding: spacing.lg,
+              flexDirection: 'row-reverse',
               alignItems: 'center',
-              gap: 12,
+              gap: spacing.md,
             }}
           >
             <Ionicons name="ribbon" size={24} color={theme.primary} />
             <Text
               style={{
-                fontSize: 14,
+                ...typography.body,
                 color: theme.primary,
-                fontWeight: '500',
                 flex: 1,
+                fontWeight: '700',
+                textAlign: 'right',
               }}
             >
               {dashboard.milestone}
             </Text>
           </View>
         )}
-
-        <View
-          style={{ flexDirection: 'row', gap: 12 }}
-        >
-          {quickActions.map((action) => (
-            <Pressable
-              key={action.title}
-              onPress={() => router.push(action.route as any)}
-              style={({ pressed }) => ({
-                flex: 1,
-                backgroundColor: theme.card,
-                borderRadius: 14,
-                borderCurve: 'continuous',
-                padding: 14,
-                alignItems: 'center',
-                gap: 8,
-                opacity: pressed ? 0.7 : 1,
-                boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-              })}
-            >
-              <Ionicons name={action.icon} size={22} color={theme.primary} />
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: '500',
-                  color: theme.text,
-                }}
-              >
-                {action.title}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
       </ScrollView>
     </>
+  );
+}
+
+function StatBlock({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: 'primary' | 'accent';
+}) {
+  const theme = colors.light;
+  const color = tone === 'primary' ? theme.primary : theme.accent;
+  return (
+    <View style={{ alignItems: 'center', minWidth: 80 }}>
+      <Text
+        selectable
+        style={{
+          ...typography.h2,
+          color,
+          fontVariant: ['tabular-nums'],
+        }}
+      >
+        {format.toArabicDigits(value)}
+      </Text>
+      <Text style={[typography.caption, { color: theme.textSecondary }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function GoalBar({
+  label,
+  completed,
+  goal,
+  percentage,
+  color,
+}: {
+  label: string;
+  completed: number;
+  goal: number;
+  percentage: number;
+  color: string;
+}) {
+  const theme = colors.light;
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Text style={[typography.caption, { color: theme.textSecondary }]}>
+          {label}
+        </Text>
+        <Text
+          style={{
+            ...typography.caption,
+            color: theme.textSecondary,
+            fontVariant: ['tabular-nums'],
+          }}
+        >
+          {format.toArabicDigits(completed)}/{format.toArabicDigits(goal)}
+        </Text>
+      </View>
+      <View
+        style={{
+          height: 8,
+          backgroundColor: theme.surfaceAlt,
+          borderRadius: radii.pill,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            height: '100%',
+            backgroundColor: color,
+            width: `${Math.min(percentage, 100)}%`,
+          }}
+        />
+      </View>
+    </View>
   );
 }

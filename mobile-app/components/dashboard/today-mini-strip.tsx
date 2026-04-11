@@ -2,7 +2,8 @@ import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
-import { colors } from '@/constants/theme';
+import { colors, format, radii, typography } from '@/constants/theme';
+import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
 
 interface TodayMiniStripProps {
   todayStatus: {
@@ -23,11 +24,11 @@ export function TodayMiniStrip({ todayStatus }: TodayMiniStripProps) {
       onPress={() => router.navigate('/(tabs)/(today)')}
       style={{
         backgroundColor: theme.card,
-        borderRadius: 16,
+        borderRadius: radii.xl,
         borderCurve: 'continuous',
-        padding: 16,
-        gap: 12,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        padding: 18,
+        gap: 14,
+        boxShadow: '0 4px 16px rgba(26,54,93,0.06)',
       }}
     >
       <View
@@ -37,24 +38,24 @@ export function TodayMiniStrip({ todayStatus }: TodayMiniStripProps) {
           alignItems: 'center',
         }}
       >
-        <Text style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
-          Today's Prayers
+        <Text style={[typography.h3, { color: theme.text }]}>
+          صلوات اليوم
         </Text>
         <Text
           style={{
-            fontSize: 13,
+            ...typography.caption,
             color: theme.textSecondary,
             fontVariant: ['tabular-nums'],
           }}
         >
-          {todayStatus?.completedCount ?? 0}/5
+          {format.toArabicDigits(todayStatus?.completedCount ?? 0)}/{format.toArabicDigits(5)}
         </Text>
       </View>
 
       <View
         style={{
           flexDirection: 'row',
-          justifyContent: 'space-around',
+          justifyContent: 'space-between',
         }}
       >
         {PRAYER_TYPES.map((type) => {
@@ -62,39 +63,41 @@ export function TodayMiniStrip({ todayStatus }: TodayMiniStripProps) {
           const isDone = todayStatus ? (todayStatus[key] as boolean) : false;
 
           return (
-            <View key={type} style={{ alignItems: 'center', gap: 4 }}>
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: isDone
-                    ? theme.successLight
-                    : theme.surfaceAlt,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {isDone ? (
-                  <Ionicons name="checkmark" size={18} color={theme.success} />
-                ) : (
+            <View key={type} style={{ alignItems: 'center', gap: 6 }}>
+              <View style={{ position: 'relative' }}>
+                <PrayerIcon
+                  name={type.toLowerCase() as PrayerName}
+                  size={44}
+                  tone={isDone ? 'gold' : 'muted'}
+                />
+                {isDone && (
                   <View
                     style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: theme.textTertiary,
+                      position: 'absolute',
+                      right: -2,
+                      bottom: -2,
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: theme.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 2,
+                      borderColor: theme.card,
                     }}
-                  />
+                  >
+                    <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+                  </View>
                 )}
               </View>
               <Text
                 style={{
+                  ...typography.caption,
+                  color: isDone ? theme.text : theme.textSecondary,
                   fontSize: 11,
-                  color: theme.textSecondary,
                 }}
               >
-                {PRAYER_NAMES[type].en.slice(0, 3)}
+                {PRAYER_NAMES[type].ar}
               </Text>
             </View>
           );

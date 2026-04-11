@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
-import { format } from 'date-fns';
+import { format as dfFormat } from 'date-fns';
 import {
   useTodayTracker,
   useMarkPrayers,
@@ -11,13 +11,16 @@ import {
 import { PrayerToggleCard } from '@/components/prayer/prayer-toggle-card';
 import { WeeklyStrip } from '@/components/prayer/weekly-strip';
 import { StreakCard } from '@/components/dashboard/streak-card';
+import { BrandCard } from '@/components/ui/brand-card';
+import { SectionHeader } from '@/components/ui/section-header';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
-import { colors } from '@/constants/theme';
+import { colors, format, radii, spacing, typography } from '@/constants/theme';
 import type { MarkPrayersPayload } from '@/services/daily-tracker';
+import type { PrayerName } from '@/components/ui/prayer-icon';
 
 export default function DailyTrackerScreen() {
   const theme = colors.light;
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const today = dfFormat(new Date(), 'yyyy-MM-dd');
 
   const { data: tracker, isLoading, refetch } = useTodayTracker();
   const { data: weekData } = useWeekTrackers();
@@ -38,21 +41,22 @@ export default function DailyTrackerScreen() {
       const prayers: MarkPrayersPayload = { [key]: !current };
       markPrayers.mutate({ date: today, prayers });
     },
-    [tracker, today],
+    [tracker, today, markPrayers],
   );
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Daily Tracker' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        style={{ backgroundColor: theme.background }}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
         }
         contentContainerStyle={{
-          padding: 20,
-          gap: 20,
-          paddingBottom: 40,
+          padding: spacing.xl,
+          gap: spacing.xl,
+          paddingBottom: spacing['4xl'],
         }}
       >
         <View
@@ -62,32 +66,35 @@ export default function DailyTrackerScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 16, color: theme.textSecondary }}>
-            {format(new Date(), 'EEEE, MMMM d')}
-          </Text>
+          <View>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>
+              {dfFormat(new Date(), 'EEEE')}
+            </Text>
+            <Text style={[typography.h2, { color: theme.text }]}>
+              صلوات اليوم
+            </Text>
+          </View>
           <View
             style={{
-              backgroundColor: theme.primaryLight,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 12,
-              borderCurve: 'continuous',
+              backgroundColor: theme.accentLight,
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: radii.pill,
             }}
           >
             <Text
               style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: theme.primary,
+                ...typography.label,
+                color: theme.accent,
                 fontVariant: ['tabular-nums'],
               }}
             >
-              {completedCount}/5
+              {format.toArabicDigits(completedCount)}/{format.toArabicDigits(5)}
             </Text>
           </View>
         </View>
 
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: spacing.md }}>
           {PRAYER_TYPES.map((type) => {
             const key = type.toLowerCase() as keyof NonNullable<typeof tracker>;
             const isCompleted = tracker ? (tracker[key] as boolean) : false;
@@ -95,11 +102,12 @@ export default function DailyTrackerScreen() {
             return (
               <PrayerToggleCard
                 key={type}
-                name={PRAYER_NAMES[type].en}
+                name={PRAYER_NAMES[type].ar}
+                prayerKey={key as PrayerName}
                 completed={isCompleted}
                 loading={
                   markPrayers.isPending &&
-                  markPrayers.variables?.prayers &&
+                  !!markPrayers.variables?.prayers &&
                   key in markPrayers.variables.prayers
                 }
                 onToggle={() => handleToggle(type)}
@@ -109,23 +117,10 @@ export default function DailyTrackerScreen() {
         </View>
 
         {weekData && weekData.length > 0 && (
-          <View
-            style={{
-              backgroundColor: theme.card,
-              borderRadius: 16,
-              borderCurve: 'continuous',
-              padding: 16,
-              gap: 10,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            }}
-          >
-            <Text
-              style={{ fontSize: 15, fontWeight: '600', color: theme.text }}
-            >
-              This Week
-            </Text>
+          <BrandCard>
+            <SectionHeader title="هذا الأسبوع" />
             <WeeklyStrip weekData={weekData} today={today} />
-          </View>
+          </BrandCard>
         )}
 
         {streak && (
