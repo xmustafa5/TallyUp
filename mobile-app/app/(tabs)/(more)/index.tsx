@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { selectionFeedback } from '@/lib/haptics';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 
 const menuItems = [
@@ -37,18 +38,16 @@ export default function MoreScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="المزيد" />
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={{
           padding: spacing.xl,
+          paddingTop: spacing.sm,
           gap: spacing.md,
           paddingBottom: spacing['4xl'],
         }}
       >
-        <Text style={[typography.h2, { color: theme.text, marginBottom: spacing.sm }]}>
-          المزيد
-        </Text>
         {menuItems.map((item) => (
           <Pressable
             key={item.title}

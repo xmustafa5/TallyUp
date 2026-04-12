@@ -1,13 +1,12 @@
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Image } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDashboard } from '@/hooks/use-progress';
 import { useTodayProgress } from '@/hooks/use-schedule';
 import { useTodayTracker, useMarkPrayers } from '@/hooks/use-daily-tracker';
-import { useAuthStore } from '@/stores/auth.store';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
-import { StreakCard } from '@/components/dashboard/streak-card';
 import { BrandCard } from '@/components/ui/brand-card';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
 import { Button } from '@/components/ui/button';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
@@ -17,7 +16,6 @@ import { format as dfFormat } from 'date-fns';
 
 export default function DashboardScreen() {
   const theme = colors.light;
-  const userName = useAuthStore((state) => state.user?.name ?? '');
   const { data: dashboard, isLoading, refetch } = useDashboard();
   const { data: todayProgress } = useTodayProgress();
 
@@ -48,50 +46,27 @@ export default function DashboardScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader
+        title="متتبع صلاة القضاء"
+        left={
+          <Image
+            source={require('@/assets/icon.png')}
+            style={{ width: 44, height: 44, borderRadius: radii.pill }}
+          />
+        }
+      />
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
         }
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={{
           padding: spacing.xl,
+          paddingTop: spacing.sm,
           gap: spacing.xl,
           paddingBottom: spacing['4xl'],
         }}
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            {userName ? (
-              <Text
-                style={[typography.caption, { color: theme.textSecondary }]}
-              >
-                السلام عليكم
-              </Text>
-            ) : null}
-            <Text style={[typography.h2, { color: theme.text }]}>
-              متتبع صلاة القضاء
-            </Text>
-          </View>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: radii.pill,
-              backgroundColor: theme.primaryLight,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="moon" size={22} color={theme.primary} />
-          </View>
-        </View>
 
         <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
           <ProgressRing
@@ -228,12 +203,6 @@ export default function DashboardScreen() {
             </View>
           </View>
         </BrandCard>
-
-        <StreakCard
-          currentStreak={dashboard?.streak?.currentStreak ?? 0}
-          longestStreak={dashboard?.streak?.longestStreak ?? 0}
-          variant="pill"
-        />
 
         <View style={{ flexDirection: 'row-reverse', gap: spacing.md }}>
           <View style={{ flex: 1 }}>

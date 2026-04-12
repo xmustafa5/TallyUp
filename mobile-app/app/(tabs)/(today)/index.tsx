@@ -14,6 +14,7 @@ import { WeeklyStrip } from '@/components/prayer/weekly-strip';
 import { StreakCard } from '@/components/dashboard/streak-card';
 import { BrandCard } from '@/components/ui/brand-card';
 import { SectionHeader } from '@/components/ui/section-header';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
 import { colors, format, radii, spacing, typography } from '@/constants/theme';
 import type { MarkPrayersPayload } from '@/services/daily-tracker';
@@ -48,33 +49,10 @@ export default function DailyTrackerScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: theme.background }}
-        refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
-        }
-        contentContainerStyle={{
-          padding: spacing.xl,
-          gap: spacing.xl,
-          paddingBottom: spacing['4xl'],
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <View>
-            <Text style={[typography.caption, { color: theme.textSecondary }]}>
-              {arWeekday(new Date())}
-            </Text>
-            <Text style={[typography.h2, { color: theme.text }]}>
-              صلوات اليوم
-            </Text>
-          </View>
+      <ScreenHeader
+        title="صلوات اليوم"
+        subtitle={arWeekday(new Date())}
+        left={
           <View
             style={{
               backgroundColor: theme.accentLight,
@@ -93,7 +71,20 @@ export default function DailyTrackerScreen() {
               {format.toArabicDigits(completedCount)}/{format.toArabicDigits(5)}
             </Text>
           </View>
-        </View>
+        }
+      />
+      <ScrollView
+        style={{ backgroundColor: theme.background }}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
+        }
+        contentContainerStyle={{
+          padding: spacing.xl,
+          paddingTop: spacing.sm,
+          gap: spacing.xl,
+          paddingBottom: spacing['4xl'],
+        }}
+      >
 
         <View style={{ gap: spacing.md }}>
           {PRAYER_TYPES.map((type) => {

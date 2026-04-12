@@ -13,6 +13,7 @@ import { PRAYER_TYPES, PRAYER_NAMES } from '@/constants/prayers';
 import { BrandCard } from '@/components/ui/brand-card';
 import { SectionHeader } from '@/components/ui/section-header';
 import { PrayerIcon, type PrayerName } from '@/components/ui/prayer-icon';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { colors, format, radii, spacing, typography } from '@/constants/theme';
 import { successNotification, warningNotification } from '@/lib/haptics';
 import type { MakeupLogEntry } from '@/services/makeup';
@@ -183,19 +184,19 @@ export default function MakeupScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="صلوات القضاء" />
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
         style={{ backgroundColor: theme.background }}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={theme.primary} />
         }
         contentContainerStyle={{
           padding: spacing.xl,
+          paddingTop: spacing.sm,
           gap: spacing.xl,
           paddingBottom: spacing['4xl'],
         }}
       >
-        <Text style={[typography.h2, { color: theme.text }]}>صلوات القضاء</Text>
 
         {stats && (
           <>
