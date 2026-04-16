@@ -65,6 +65,21 @@ export async function setupReminderJobs(fastify: FastifyInstance): Promise<void>
 }
 
 /**
+ * Deactivates a device token that Expo reported as unregistered.
+ */
+async function deactivateToken(fastify: FastifyInstance, deviceId: string): Promise<void> {
+  try {
+    await fastify.prisma.deviceToken.update({
+      where: { id: deviceId },
+      data: { isActive: false },
+    });
+    fastify.log.info({ deviceId }, 'Deactivated unregistered device token');
+  } catch {
+    // Swallow -- best effort
+  }
+}
+
+/**
  * Finds all users with prayer reminders enabled and active device tokens,
  * then sends a push notification to each device.
  */
@@ -76,7 +91,7 @@ async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
     select: { userId: true },
   });
 
-  const userIds = preferences.map((p) => p.userId);
+  const userIds = preferences.map((p: { userId: string }) => p.userId);
 
   if (userIds.length === 0) {
     fastify.log.info('No users with prayer reminders enabled');
@@ -92,18 +107,18 @@ async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
 
   let sent = 0;
   for (const device of deviceTokens) {
-    try {
-      await sendPushNotification(device.token, {
-        title: 'Time to pray',
-        body: "Don't forget your prayers today",
-        data: { type: 'PRAYER_REMINDER' },
-      });
+    const result = await sendPushNotification(device.token, {
+      title: 'حان وقت الصلاة',
+      body: 'لا تنسَ صلواتك اليوم',
+      data: { type: 'PRAYER_REMINDER' },
+    });
+
+    if (result.success) {
       sent++;
-    } catch (error) {
-      fastify.log.error(
-        { deviceId: device.id, error },
-        'Failed to send prayer reminder',
-      );
+    } else if (result.shouldDeactivate) {
+      await deactivateToken(fastify, device.id);
+    } else {
+      fastify.log.error({ deviceId: device.id }, 'Failed to send prayer reminder');
     }
   }
 
@@ -125,7 +140,7 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
     select: { userId: true },
   });
 
-  const userIds = preferences.map((p) => p.userId);
+  const userIds = preferences.map((p: { userId: string }) => p.userId);
 
   if (userIds.length === 0) {
     fastify.log.info('No users with streak reminders enabled');
@@ -145,7 +160,7 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
     return;
   }
 
-  const streakUserIds = streaks.map((s) => s.userId);
+  const streakUserIds = streaks.map((s: { userId: string }) => s.userId);
 
   const deviceTokens = await fastify.prisma.deviceToken.findMany({
     where: {
@@ -155,23 +170,25 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
   });
 
   // Build a map of userId to streak count for the notification body
-  const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
+  const streakMap = new Map(
+    streaks.map((s: { userId: string; currentStreak: number }) => [s.userId, s.currentStreak]),
+  );
 
   let sent = 0;
   for (const device of deviceTokens) {
-    try {
-      const streakCount = streakMap.get(device.userId) ?? 0;
-      await sendPushNotification(device.token, {
-        title: 'Keep your streak going!',
-        body: `You have a ${streakCount}-day streak`,
-        data: { type: 'STREAK_REMINDER' },
-      });
+    const streakCount = streakMap.get(device.userId) ?? 0;
+    const result = await sendPushNotification(device.token, {
+      title: 'حافظ على سلسلتك!',
+      body: `لديك سلسلة ${streakCount} أيام متتالية`,
+      data: { type: 'STREAK_REMINDER' },
+    });
+
+    if (result.success) {
       sent++;
-    } catch (error) {
-      fastify.log.error(
-        { deviceId: device.id, error },
-        'Failed to send streak reminder',
-      );
+    } else if (result.shouldDeactivate) {
+      await deactivateToken(fastify, device.id);
+    } else {
+      fastify.log.error({ deviceId: device.id }, 'Failed to send streak reminder');
     }
   }
 
