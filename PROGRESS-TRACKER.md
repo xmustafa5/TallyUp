@@ -201,13 +201,31 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 ### 6B: Push Notifications (F-08)
 
 - [x] Create DeviceToken + NotificationPreference Prisma models + NotificationType enum
-- [x] Create notification service stub (console.log, ready for FCM integration)
+- [x] Create notification service (real Expo Push API via fetch, handles DeviceNotRegistered)
 - [x] Create notification routes (POST/DELETE /devices, GET/PUT /preferences)
 - [x] Create TypeBox schemas + Swagger docs + "Notifications" tag
 - [x] Create BullMQ reminder jobs (prayer-reminder 8AM UTC, streak-reminder 9PM UTC)
-- [x] Write notification tests (3 tests)
+- [x] Write notification tests (entity + service, 12 tests)
 - [x] Create notifications API service + React Query hooks
 - [x] Add Notification preferences toggles to settings page (4 toggles)
+
+### 6C: In-App Notification Inbox
+
+- [x] Backend: Notification Prisma model (type, title, body, data, readAt) + indexes
+- [x] Backend: Notification entity + NotificationRepository interface + Prisma impl
+- [x] Backend: GET /notifications (paginated), GET /notifications/unread-count, PATCH /notifications/:id/read, POST /notifications/read-all
+- [x] Backend: TypeBox schemas + Swagger docs for all 4 inbox routes
+- [x] Backend: Persist notifications on send in reminder.job.ts (prayer + streak) with notificationId in push payload
+- [x] Web: Extend services/notifications.ts with list/unread-count/mark-read/mark-all-read
+- [x] Web: useNotificationsInbox, useUnreadNotificationsCount (60s poll), useMarkNotificationRead, useMarkAllNotificationsRead hooks
+- [x] Web: /notifications page with All/Unread filter, per-row mark-as-read, mark-all-read, empty state
+- [x] Web: NotificationBell component with unread badge in app shell sidebar
+- [x] Web: i18n keys (notifications.* + nav.notifications) for en/ar
+- [x] Mobile: Extend services/notifications.ts + hooks (matching web)
+- [x] Mobile: (tabs)/(more)/notifications.tsx screen with filter, pull-to-refresh, mark-as-read
+- [x] Mobile: More menu entry with live unread badge
+- [x] Mobile: Wire Expo addNotificationReceivedListener to invalidate inbox + unread-count queries
+- [x] Mobile: Wire Expo addNotificationResponseReceivedListener to mark-as-read + navigate to inbox
 
 ---
 

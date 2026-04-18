@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
-import { registerDevice } from '@/services/notifications';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { registerDevice, markNotificationRead } from '@/services/notifications';
+import { queryKeys } from '@/constants/query-keys';
 
 const STORED_TOKEN_KEY = 'expo_push_token';
 
@@ -87,6 +90,7 @@ export function usePushNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const notificationListener = useRef<{ remove: () => void } | null>(null);
   const responseListener = useRef<{ remove: () => void } | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -112,18 +116,46 @@ export function usePushNotifications() {
 
     // Setup listeners via lazy import
     import('expo-notifications').then((Notifications) => {
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener(() => {});
+      notificationListener.current = Notifications.addNotificationReceivedListener(
+        () => {
+          // Foreground delivery — refresh inbox + unread count so UI stays in sync.
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.inbox });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.notifications.unreadCount,
+          });
+        },
+      );
 
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener(() => {});
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const data = response.notification.request.content.data as
+            | { notificationId?: string }
+            | undefined;
+
+          if (data?.notificationId) {
+            // Best-effort mark-as-read — don't block nav on failure.
+            markNotificationRead(data.notificationId)
+              .catch(() => {})
+              .finally(() => {
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.notifications.inbox,
+                });
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.notifications.unreadCount,
+                });
+              });
+          }
+
+          router.push('/(tabs)/(more)/notifications');
+        },
+      );
     });
 
     return () => {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, []);
+  }, [queryClient]);
 
   return { expoPushToken };
 }

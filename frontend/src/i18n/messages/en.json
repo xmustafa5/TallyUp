@@ -26,6 +26,7 @@
     "makeup": "Makeup",
     "calendar": "Calendar",
     "schedule": "Schedule",
+    "notifications": "Notifications",
     "settings": "Settings"
   },
   "auth": {
@@ -138,5 +139,17 @@
     "75": "Amazing progress! 75% completed!",
     "90": "Almost done! 90% of missed prayers completed!",
     "100": "All missed prayers have been made up!"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You have no notifications yet",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "unread": "Unread",
+    "all": "All",
+    "justNow": "Just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago"
   }
 }

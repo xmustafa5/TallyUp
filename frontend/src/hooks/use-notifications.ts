@@ -6,10 +6,19 @@ import {
   updateNotificationPreferences,
   registerDevice,
   removeDevice,
+  listNotifications,
+  getUnreadCount,
+  markNotificationRead,
+  markAllNotificationsRead,
 } from '@/services/notifications';
-import type { UpdateNotificationPreferencesPayload } from '@/services/notifications';
+import type {
+  UpdateNotificationPreferencesPayload,
+  ListNotificationsParams,
+} from '@/services/notifications';
 
 const PREFERENCES_KEY = ['notifications', 'preferences'] as const;
+const INBOX_KEY = ['notifications', 'inbox'] as const;
+const UNREAD_COUNT_KEY = ['notifications', 'unread-count'] as const;
 
 export function useNotificationPreferences() {
   return useQuery({
@@ -40,5 +49,45 @@ export function useRegisterDevice() {
 export function useRemoveDevice() {
   return useMutation({
     mutationFn: (token: string) => removeDevice(token),
+  });
+}
+
+export function useNotificationsInbox(params: ListNotificationsParams = {}) {
+  return useQuery({
+    queryKey: [...INBOX_KEY, params],
+    queryFn: () => listNotifications(params),
+  });
+}
+
+export function useUnreadNotificationsCount() {
+  return useQuery({
+    queryKey: UNREAD_COUNT_KEY,
+    queryFn: getUnreadCount,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => markNotificationRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INBOX_KEY });
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => markAllNotificationsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INBOX_KEY });
+      queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
   });
 }

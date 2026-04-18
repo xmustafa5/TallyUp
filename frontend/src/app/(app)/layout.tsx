@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CheckSquare, Clock, Home, RotateCcw, Settings, Target } from 'lucide-react';
+import { Bell, Calendar, CheckSquare, Clock, Home, RotateCcw, Settings, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { AuthGuard } from '@/components/shared/auth-guard';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
+import { NotificationBell } from '@/components/shared/notification-bell';
 
 const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: Home },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/makeup', labelKey: 'makeup', icon: RotateCcw },
   { href: '/calendar', labelKey: 'calendar', icon: Calendar },
   { href: '/schedule', labelKey: 'schedule', icon: Target },
+  { href: '/notifications', labelKey: 'notifications', icon: Bell },
   { href: '/settings', labelKey: 'settings', icon: Settings },
 ] as const;
 
@@ -34,8 +36,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Desktop Sidebar */}
         <aside className="hidden w-56 shrink-0 border-r bg-card md:block rtl:border-r-0 rtl:border-l">
           <div className="sticky top-0 flex h-screen flex-col">
-            <div className="border-b p-4">
+            <div className="flex items-center justify-between border-b p-4">
               <h1 className="text-lg font-bold tracking-tight">Qatha</h1>
+              <NotificationBell />
             </div>
             <nav className="flex-1 space-y-1 p-3">
               {NAV_ITEMS.map((item) => {

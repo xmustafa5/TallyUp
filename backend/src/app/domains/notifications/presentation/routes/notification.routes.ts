@@ -4,9 +4,16 @@ import {
   removeDeviceSchema,
   getPreferencesSchema,
   updatePreferencesSchema,
+  listNotificationsSchema,
+  getUnreadCountSchema,
+  markNotificationReadSchema,
+  markAllReadSchema,
 } from '../schemas/notification.schemas';
+import { PrismaNotificationRepository } from '../../infrastructure/repositories/prisma-notification.repository';
 
 export default async function notificationRoutes(fastify: FastifyInstance) {
+  const notifications = new PrismaNotificationRepository(fastify.prisma);
+
   // All notification routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
 
@@ -124,5 +131,69 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
         updatedAt: preferences.updatedAt.toISOString(),
       },
     });
+  });
+
+  // GET /notifications
+  fastify.get('/', { schema: listNotificationsSchema }, async (request, reply) => {
+    const { id: userId } = request.user as { id: string };
+    const query = request.query as {
+      page?: number;
+      pageSize?: number;
+      onlyUnread?: boolean;
+    };
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const onlyUnread = query.onlyUnread ?? false;
+
+    const [items, total] = await Promise.all([
+      notifications.listByUserId(userId, {
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+        onlyUnread,
+      }),
+      notifications.countByUserId(userId, { onlyUnread }),
+    ]);
+
+    return reply.send({
+      success: true,
+      data: items.map((n) => n.toResponse()),
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
+  });
+
+  // GET /notifications/unread-count
+  fastify.get('/unread-count', { schema: getUnreadCountSchema }, async (request, reply) => {
+    const { id: userId } = request.user as { id: string };
+    const unreadCount = await notifications.countByUserId(userId, { onlyUnread: true });
+    return reply.send({ success: true, data: { unreadCount } });
+  });
+
+  // PATCH /notifications/:id/read
+  fastify.patch(
+    '/:id/read',
+    { schema: markNotificationReadSchema },
+    async (request, reply) => {
+      const { id: userId } = request.user as { id: string };
+      const { id } = request.params as { id: string };
+
+      const notification = await notifications.markRead(id, userId);
+      if (!notification) {
+        return reply.notFound('Notification not found');
+      }
+
+      return reply.send({ success: true, data: notification.toResponse() });
+    },
+  );
+
+  // POST /notifications/read-all
+  fastify.post('/read-all', { schema: markAllReadSchema }, async (request, reply) => {
+    const { id: userId } = request.user as { id: string };
+    const updated = await notifications.markAllRead(userId);
+    return reply.send({ success: true, data: { updated } });
   });
 }

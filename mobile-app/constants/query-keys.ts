@@ -26,5 +26,7 @@ export const queryKeys = {
   },
   notifications: {
     preferences: ['notifications', 'preferences'] as const,
+    inbox: ['notifications', 'inbox'] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
   },
 } as const;

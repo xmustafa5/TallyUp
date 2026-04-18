@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { Worker } from 'bullmq';
 import { sendPushNotification } from '../../domain/services/notification.service';
+import { PrismaNotificationRepository } from '../repositories/prisma-notification.repository';
 
 /**
  * Sets up repeatable BullMQ jobs for push notification reminders.
@@ -80,11 +81,13 @@ async function deactivateToken(fastify: FastifyInstance, deviceId: string): Prom
 }
 
 /**
- * Finds all users with prayer reminders enabled and active device tokens,
- * then sends a push notification to each device.
+ * Finds all users with prayer reminders enabled, persists an inbox notification
+ * for each, and sends a push to their active device tokens.
  */
 async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
   fastify.log.info('Processing prayer reminder job');
+
+  const notifications = new PrismaNotificationRepository(fastify.prisma);
 
   const preferences = await fastify.prisma.notificationPreference.findMany({
     where: { prayerReminders: true },
@@ -98,6 +101,21 @@ async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
     return;
   }
 
+  const title = 'حان وقت الصلاة';
+  const body = 'لا تنسَ صلواتك اليوم';
+
+  // Persist an inbox notification per user, then fetch them to get IDs
+  const createdByUser = new Map<string, string>();
+  for (const userId of userIds) {
+    const n = await notifications.create({
+      userId,
+      type: 'PRAYER_REMINDER',
+      title,
+      body,
+    });
+    createdByUser.set(userId, n.id);
+  }
+
   const deviceTokens = await fastify.prisma.deviceToken.findMany({
     where: {
       userId: { in: userIds },
@@ -107,10 +125,14 @@ async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
 
   let sent = 0;
   for (const device of deviceTokens) {
+    const notificationId = createdByUser.get(device.userId);
     const result = await sendPushNotification(device.token, {
-      title: 'حان وقت الصلاة',
-      body: 'لا تنسَ صلواتك اليوم',
-      data: { type: 'PRAYER_REMINDER' },
+      title,
+      body,
+      data: {
+        type: 'PRAYER_REMINDER',
+        ...(notificationId ? { notificationId } : {}),
+      },
     });
 
     if (result.success) {
@@ -123,17 +145,19 @@ async function processPrayerReminder(fastify: FastifyInstance): Promise<void> {
   }
 
   fastify.log.info(
-    { sent, total: deviceTokens.length },
+    { sent, totalDevices: deviceTokens.length, inboxEntries: createdByUser.size },
     'Prayer reminder job completed',
   );
 }
 
 /**
- * Finds users with streak reminders enabled, active device tokens, and a
- * current streak greater than 0, then sends a push notification.
+ * Finds users with streak reminders enabled and an active streak, persists an
+ * inbox notification for each, and sends a push to their active device tokens.
  */
 async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
   fastify.log.info('Processing streak reminder job');
+
+  const notifications = new PrismaNotificationRepository(fastify.prisma);
 
   const preferences = await fastify.prisma.notificationPreference.findMany({
     where: { streakReminders: true },
@@ -160,7 +184,26 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
     return;
   }
 
+  const streakMap = new Map(
+    streaks.map((s: { userId: string; currentStreak: number }) => [s.userId, s.currentStreak]),
+  );
   const streakUserIds = streaks.map((s: { userId: string }) => s.userId);
+
+  const title = 'حافظ على سلسلتك!';
+
+  // Persist an inbox notification per user with their streak count baked in
+  const createdByUser = new Map<string, string>();
+  for (const userId of streakUserIds) {
+    const streakCount = streakMap.get(userId) ?? 0;
+    const n = await notifications.create({
+      userId,
+      type: 'STREAK_REMINDER',
+      title,
+      body: `لديك سلسلة ${streakCount} أيام متتالية`,
+      data: { streakCount },
+    });
+    createdByUser.set(userId, n.id);
+  }
 
   const deviceTokens = await fastify.prisma.deviceToken.findMany({
     where: {
@@ -169,18 +212,17 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
     },
   });
 
-  // Build a map of userId to streak count for the notification body
-  const streakMap = new Map(
-    streaks.map((s: { userId: string; currentStreak: number }) => [s.userId, s.currentStreak]),
-  );
-
   let sent = 0;
   for (const device of deviceTokens) {
     const streakCount = streakMap.get(device.userId) ?? 0;
+    const notificationId = createdByUser.get(device.userId);
     const result = await sendPushNotification(device.token, {
-      title: 'حافظ على سلسلتك!',
+      title,
       body: `لديك سلسلة ${streakCount} أيام متتالية`,
-      data: { type: 'STREAK_REMINDER' },
+      data: {
+        type: 'STREAK_REMINDER',
+        ...(notificationId ? { notificationId } : {}),
+      },
     });
 
     if (result.success) {
@@ -193,7 +235,7 @@ async function processStreakReminder(fastify: FastifyInstance): Promise<void> {
   }
 
   fastify.log.info(
-    { sent, total: deviceTokens.length },
+    { sent, totalDevices: deviceTokens.length, inboxEntries: createdByUser.size },
     'Streak reminder job completed',
   );
 }

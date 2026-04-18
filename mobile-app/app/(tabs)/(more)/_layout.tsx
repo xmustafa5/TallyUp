@@ -4,6 +4,7 @@ export default function MoreLayout() {
   return (
     <Stack>
       <Stack.Screen name="index" options={{ title: 'More' }} />
+      <Stack.Screen name="notifications" options={{ title: 'الإشعارات' }} />
       <Stack.Screen name="calendar" options={{ title: 'Calendar' }} />
       <Stack.Screen name="gap-periods/index" options={{ title: 'Gap Periods' }} />
       <Stack.Screen name="gap-periods/create" options={{ title: 'Add Gap Period' }} />

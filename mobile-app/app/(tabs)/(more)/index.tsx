@@ -4,36 +4,53 @@ import { Ionicons } from '@expo/vector-icons';
 import { selectionFeedback } from '@/lib/haptics';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { colors, radii, spacing, typography } from '@/constants/theme';
+import { useUnreadNotificationsCount } from '@/hooks/use-notifications';
 
-const menuItems = [
-  {
-    title: 'التقويم',
-    subtitle: 'نظرة شهرية على الصلوات',
-    icon: 'calendar' as const,
-    route: '/(tabs)/(more)/calendar',
-  },
-  {
-    title: 'فترات الانقطاع',
-    subtitle: 'إدارة فترات الانقطاع عن الصلاة',
-    icon: 'time' as const,
-    route: '/(tabs)/(more)/gap-periods',
-  },
-  {
-    title: 'الأهداف',
-    subtitle: 'أهداف يومية وأسبوعية',
-    icon: 'trophy' as const,
-    route: '/(tabs)/(more)/schedule',
-  },
-  {
-    title: 'الإعدادات',
-    subtitle: 'الملف الشخصي، الإشعارات، الحساب',
-    icon: 'settings' as const,
-    route: '/(tabs)/(more)/settings',
-  },
-];
+interface MenuItem {
+  title: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  route: string;
+  badge?: number;
+}
 
 export default function MoreScreen() {
   const theme = colors.light;
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+
+  const menuItems: MenuItem[] = [
+    {
+      title: 'الإشعارات',
+      subtitle: 'تنبيهات الصلاة والأهداف',
+      icon: 'notifications',
+      route: '/(tabs)/(more)/notifications',
+      badge: unreadCount,
+    },
+    {
+      title: 'التقويم',
+      subtitle: 'نظرة شهرية على الصلوات',
+      icon: 'calendar',
+      route: '/(tabs)/(more)/calendar',
+    },
+    {
+      title: 'فترات الانقطاع',
+      subtitle: 'إدارة فترات الانقطاع عن الصلاة',
+      icon: 'time',
+      route: '/(tabs)/(more)/gap-periods',
+    },
+    {
+      title: 'الأهداف',
+      subtitle: 'أهداف يومية وأسبوعية',
+      icon: 'trophy',
+      route: '/(tabs)/(more)/schedule',
+    },
+    {
+      title: 'الإعدادات',
+      subtitle: 'الملف الشخصي، الإشعارات، الحساب',
+      icon: 'settings',
+      route: '/(tabs)/(more)/settings',
+    },
+  ];
 
   return (
     <>
@@ -79,6 +96,33 @@ export default function MoreScreen() {
               }}
             >
               <Ionicons name={item.icon} size={22} color={theme.primary} />
+              {item.badge !== undefined && item.badge > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    minWidth: 20,
+                    height: 20,
+                    paddingHorizontal: 4,
+                    borderRadius: 10,
+                    backgroundColor: theme.error,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: 11,
+                      fontWeight: '700',
+                      fontVariant: ['tabular-nums'],
+                    }}
+                  >
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Text
