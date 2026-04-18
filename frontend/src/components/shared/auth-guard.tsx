@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
+import { useGapPeriods } from '@/hooks/use-gap-periods';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
-// Use useSyncExternalStore to reliably track hydration state
 function useHydrated() {
   return useSyncExternalStore(
     (onStoreChange) => useAuthStore.persist.onFinishHydration(onStoreChange),
     () => useAuthStore.persist.hasHydrated(),
-    () => false, // server snapshot
+    () => false,
   );
 }
 
@@ -24,22 +24,49 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
 
-  // Don't render or redirect until hydration is complete
-  if (!hydrated) {
-    return null;
-  }
-
+  const needsSetup = Boolean(isAuthenticated && user && !user.birthdate);
   const isOnSetupPage = pathname === '/setup';
+  const isOnGapPeriodsNew = pathname === '/gap-periods/new';
 
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
-  }
+  const gapPeriodsQuery = useGapPeriods();
+  const shouldCheckGapPeriods = Boolean(
+    hydrated && isAuthenticated && user?.birthdate && !isOnSetupPage,
+  );
+  const hasZeroGapPeriods =
+    shouldCheckGapPeriods &&
+    gapPeriodsQuery.isSuccess &&
+    (gapPeriodsQuery.data?.length ?? 0) === 0;
 
-  if (isAuthenticated && user && !user.birthdate && !isOnSetupPage) {
-    router.push('/setup');
-    return null;
-  }
+  useEffect(() => {
+    if (!hydrated) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (needsSetup && !isOnSetupPage) {
+      router.push('/setup');
+      return;
+    }
+
+    if (hasZeroGapPeriods && !isOnGapPeriodsNew) {
+      router.push('/gap-periods/new');
+    }
+  }, [
+    hydrated,
+    isAuthenticated,
+    needsSetup,
+    isOnSetupPage,
+    hasZeroGapPeriods,
+    isOnGapPeriodsNew,
+    router,
+  ]);
+
+  if (!hydrated) return null;
+  if (!isAuthenticated) return null;
+  if (needsSetup && !isOnSetupPage) return null;
+  if (hasZeroGapPeriods && !isOnGapPeriodsNew) return null;
 
   return <>{children}</>;
 }

@@ -48,7 +48,7 @@ export default function SetupPage() {
       if (accessToken && refreshToken) {
         setAuth(updatedUser, accessToken, refreshToken);
       }
-      router.push('/gap-periods');
+      router.push('/gap-periods/new');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save profile.');
     }

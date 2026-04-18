@@ -43,14 +43,14 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 - [x] Build login page
 - [x] Build register page
 - [x] Build auth guard component
-- [ ] Set up next-intl (middleware, en.json, ar.json)
+- [x] Set up next-intl (cookie-based locale via i18n/request.ts + NextIntlClientProvider; no middleware needed since routing is not locale-prefixed)
 
 ### 1D: Profile Setup (F-01)
 
 - [x] Create profile domain backend (GET /profile, PUT /profile)
 - [x] Create profile TypeBox schemas + Swagger docs
 - [x] Build setup page (birthdate picker, puberty age)
-- [ ] Implement onboarding flow redirect logic
+- [x] Implement onboarding flow redirect logic (AuthGuard routes to /setup when no birthdate, then /gap-periods/new when zero gap periods)
 
 ---
 
@@ -79,7 +79,7 @@ Mark tasks `- [x]` as they are completed. See `DEVELOPMENT-PLAN.md` for full det
 - [x] Build calculation summary component (totals, per-type breakdown, merged periods)
 - [x] Build prayer balance component (progress bar, per-type counts)
 - [x] Update dashboard with prayer balance summary and quick links
-- [ ] Integrate into onboarding flow
+- [x] Integrate into onboarding flow (setup page redirects to /gap-periods/new; AuthGuard enforces it)
 
 ---
 

@@ -10,5 +10,9 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(curl -s http://localhost:3001 -o /dev/null -w \"%{http_code}\")"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "context7",
+    "sequential-thinking"
+  ]
 }
