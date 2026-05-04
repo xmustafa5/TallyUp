@@ -116,38 +116,6 @@ All errors follow a consistent format:
           name: 'System',
           description: 'System health and monitoring endpoints',
         },
-        {
-          name: 'Auth',
-          description: 'Authentication and user management endpoints',
-        },
-        {
-          name: 'Profile',
-          description: 'User profile and settings endpoints',
-        },
-        {
-          name: 'Gap Periods',
-          description: 'Gap period management and prayer calculation endpoints',
-        },
-        {
-          name: 'Makeup',
-          description: 'Makeup prayer logging, history, and statistics endpoints',
-        },
-        {
-          name: 'Daily Tracker',
-          description: 'Daily prayer tracking, finalization, and streak endpoints',
-        },
-        {
-          name: 'Progress',
-          description: 'Dashboard, calendar, and streak endpoints',
-        },
-        {
-          name: 'Schedule',
-          description: 'Makeup prayer schedule and goal tracking endpoints',
-        },
-        {
-          name: 'Notifications',
-          description: 'Device registration, notification preferences, and reminders',
-        },
       ],
       components: {
         schemas: {

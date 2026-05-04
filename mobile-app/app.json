@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Qatha",
-    "slug": "qatha",
+    "name": "App",
+    "slug": "app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "qatha",
+    "scheme": "app",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.qatha.app"
+      "bundleIdentifier": "com.example.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#F7FAFC"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.qatha.app"
+      "package": "com.example.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,10 +42,7 @@
     ],
     "extra": {
       "router": {},
-      "apiUrl": "https://api-qatha.chesty.dev",
-      "eas": {
-        "projectId": "07ac53ad-e610-4fc9-b1c3-1367e6757a1a"
-      }
+      "apiUrl": "http://localhost:3000"
     }
   }
 }

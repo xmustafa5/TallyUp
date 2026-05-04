@@ -17,8 +17,8 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: 'Qatha - Prayer Makeup Tracker',
-  description: 'Track and make up your missed prayers with a structured plan',
+  title: 'App',
+  description: 'Starter template',
 };
 
 export default async function RootLayout({

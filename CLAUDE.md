@@ -1,6 +1,6 @@
-# Qatha
+# Starter Template
 
-Monorepo with Fastify backend + Next.js frontend + React Native mobile app.
+Monorepo starter template: Fastify backend + Next.js frontend + React Native mobile app. Empty pages, full plumbing.
 
 **Backend:** Fastify 5 | TypeScript | Prisma | PostgreSQL | BullMQ | Redis | Docker | pnpm
 **Frontend:** Next.js 16 | React 19 | TypeScript | Tailwind CSS | shadcn/ui | pnpm
@@ -232,9 +232,8 @@ open http://localhost:3000/documentation
 
 ## Development Tracking
 
-- `DEVELOPMENT-PLAN.md` -- Full phased roadmap (7 phases) with architecture decisions and file paths
+- `DEVELOPMENT-PLAN.md` -- Phased roadmap (define per project)
 - `PROGRESS-TRACKER.md` -- Task completion tracker, mark `- [x]` as tasks are done
-- `qadha_prd.md` -- Product requirements document (features, decisions, user personas)
 
 When starting a new phase or task, check `PROGRESS-TRACKER.md` for current status. After completing any task, immediately mark it as done in the tracker.
 
