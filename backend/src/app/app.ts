@@ -112,12 +112,26 @@ All errors follow a consistent format:
         },
       ],
       tags: [
+        { name: 'System', description: 'System health and monitoring endpoints' },
+        { name: 'Auth', description: 'Registration, login, token refresh and logout' },
+        { name: 'Users', description: 'Profile management and User ID lookup' },
+        { name: 'Rooms', description: 'Challenge rooms: lifecycle, members, targets' },
+        { name: 'Invitations', description: 'Invite users to rooms and respond to invites' },
+        { name: 'Cycles', description: 'Challenge cycles, live leaderboard and results' },
+        { name: 'CheckIns', description: 'Recording, listing and undoing point check-ins' },
         {
-          name: 'System',
-          description: 'System health and monitoring endpoints',
+          name: 'Notifications',
+          description: 'In-app notifications and Expo push device tokens',
         },
       ],
       components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
         schemas: {
           BadRequestError: {
             type: 'object',

@@ -4,5 +4,276 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// User
+// ============================================================
+model User {
+  id                  String   @id @default(uuid()) @db.Uuid
+  publicId            String   @unique @map("public_id") @db.VarChar(20) // e.g. ALI-2941
+  email               String   @unique @db.VarChar(255)
+  passwordHash        String   @map("password_hash") @db.VarChar(255)
+  displayName         String   @map("display_name") @db.VarChar(80)
+  avatarUrl           String?  @map("avatar_url") @db.VarChar(500)
+  timezone            String   @default("UTC") @db.VarChar(64) // IANA, e.g. Asia/Riyadh
+  locale              String   @default("en") @db.VarChar(8)
+  notifyHalfwayBehind Boolean  @default(true) @map("notify_halfway_behind")
+  notifyDeadline      Boolean  @default(true) @map("notify_deadline")
+  notifyResults       Boolean  @default(true) @map("notify_results")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  memberships         Membership[]
+  checkIns            CheckIn[]
+  invitationsSent     Invitation[]   @relation("InvitationsFromUser")
+  invitationsReceived Invitation[]   @relation("InvitationsToUser")
+  notifications       Notification[]
+  deviceTokens        DeviceToken[]
+  refreshTokens       RefreshToken[]
+  roomsAsAdmin        Room[]         @relation("RoomAdmin")
+
+  @@index([publicId])
+  @@map("users")
+}
+
+// ============================================================
+// RefreshToken (stateful refresh for meaningful logout)
+// ============================================================
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  jti       String    @unique @db.VarChar(64)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// DeviceToken (Expo push)
+// ============================================================
+model DeviceToken {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  token      String         @unique @db.VarChar(255) // ExpoPushToken[xxxx]
+  platform   DevicePlatform
+  lastSeenAt DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+enum DevicePlatform {
+  ios
+  android
+  web
+}
+
+// ============================================================
+// Room
+// ============================================================
+model Room {
+  id              String     @id @default(uuid()) @db.Uuid
+  name            String     @db.VarChar(80)
+  icon            String?    @db.VarChar(16) // emoji
+  description     String?    @db.VarChar(500)
+  adminUserId     String     @map("admin_user_id") @db.Uuid
+  timezone        String     @db.VarChar(64) // IANA, copied from admin at create
+  periodType      PeriodType @map("period_type")
+  customDays      Int?       @map("custom_days")
+  startDayOfWeek  Int?       @map("start_day_of_week") // 0=Sun..6=Sat
+  startDayOfMonth Int?       @map("start_day_of_month") // 1..28
+  winnerRule      WinnerRule @default(none) @map("winner_rule")
+  winnerN         Int?       @map("winner_n")
+  loserRule       LoserRule  @default(none) @map("loser_rule")
+  loserN          Int?       @map("loser_n")
+  capAtTarget     Boolean    @default(true) @map("cap_at_target")
+  stake           String?    @db.VarChar(280)
+  status          RoomStatus @default(draft)
+  currentCycleId  String?    @unique @map("current_cycle_id") @db.Uuid
+  pausedAt        DateTime?  @map("paused_at") @db.Timestamptz
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  admin        User         @relation("RoomAdmin", fields: [adminUserId], references: [id])
+  memberships  Membership[]
+  cycles       Cycle[]      @relation("RoomCycles")
+  currentCycle Cycle?       @relation("RoomCurrentCycle", fields: [currentCycleId], references: [id])
+  invitations  Invitation[]
+
+  @@index([adminUserId])
+  @@index([status])
+  @@map("rooms")
+}
+
+enum RoomStatus {
+  draft
+  active
+  paused
+  archived
+}
+
+enum PeriodType {
+  week
+  month
+  custom
+  oneshot
+}
+
+enum WinnerRule {
+  none
+  highest
+  lowest
+  top_n
+  threshold
+}
+
+enum LoserRule {
+  none
+  lowest
+  highest
+  bottom_n
+  threshold
+}
+
+// ============================================================
+// Membership (per-user target + role)
+// ============================================================
+model Membership {
+  id                    String         @id @default(uuid()) @db.Uuid
+  roomId                String         @map("room_id") @db.Uuid
+  userId                String         @map("user_id") @db.Uuid
+  target                Int            @default(1)
+  role                  MembershipRole @default(member)
+  joinedAt              DateTime       @default(now()) @map("joined_at") @db.Timestamptz
+  leftAt                DateTime?      @map("left_at") @db.Timestamptz
+  joinedLate            Boolean        @default(false) @map("joined_late")
+  includeInCurrentCycle Boolean?       @map("include_in_current_cycle")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+enum MembershipRole {
+  admin
+  member
+}
+
+// ============================================================
+// Cycle
+// ============================================================
+model Cycle {
+  id           String      @id @default(uuid()) @db.Uuid
+  roomId       String      @map("room_id") @db.Uuid
+  cycleNumber  Int         @map("cycle_number")
+  startsAt     DateTime    @map("starts_at") @db.Timestamptz
+  endsAt       DateTime    @map("ends_at") @db.Timestamptz
+  status       CycleStatus @default(active)
+  resultJson   Json?       @map("result_json")
+  ruleSnapshot Json        @map("rule_snapshot")
+  endJobId     String?     @map("end_job_id") @db.VarChar(128)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  room        Room      @relation("RoomCycles", fields: [roomId], references: [id], onDelete: Cascade)
+  roomCurrent Room?     @relation("RoomCurrentCycle")
+  checkIns    CheckIn[]
+
+  @@unique([roomId, cycleNumber])
+  @@index([roomId, status])
+  @@map("cycles")
+}
+
+enum CycleStatus {
+  active
+  ended
+  cancelled
+}
+
+// ============================================================
+// CheckIn
+// ============================================================
+model CheckIn {
+  id        String    @id @default(uuid()) @db.Uuid
+  cycleId   String    @map("cycle_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  points    Int
+  note      String?   @db.VarChar(280)
+  clientId  String?   @map("client_id") @db.VarChar(64)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  undoneAt  DateTime? @map("undone_at") @db.Timestamptz
+
+  cycle Cycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@index([cycleId, userId])
+  @@index([cycleId, createdAt])
+  @@map("check_ins")
+}
+
+// ============================================================
+// Invitation
+// ============================================================
+model Invitation {
+  id          String           @id @default(uuid()) @db.Uuid
+  roomId      String           @map("room_id") @db.Uuid
+  fromUserId  String           @map("from_user_id") @db.Uuid
+  toUserId    String           @map("to_user_id") @db.Uuid
+  status      InvitationStatus @default(pending)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  respondedAt DateTime?        @map("responded_at") @db.Timestamptz
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  from User @relation("InvitationsFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+  to   User @relation("InvitationsToUser", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, toUserId, status])
+  @@index([toUserId, status])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  rejected
+  cancelled
+}
+
+// ============================================================
+// Notification
+// ============================================================
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?        @map("read_at") @db.Timestamptz
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  invitation_received
+  invitation_accepted
+  cycle_started
+  cycle_halfway_behind
+  cycle_deadline_warning
+  cycle_ended
+  member_checked_in
 }
