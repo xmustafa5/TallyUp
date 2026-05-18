@@ -3,8 +3,15 @@ import {
   getMeSchema,
   updateMeSchema,
   lookupByPublicIdSchema,
+  myHistorySchema,
   deleteMeSchema,
 } from '../schemas/users.schemas';
+
+interface StoredResult {
+  winners?: { userId: string }[];
+  losers?: { userId: string }[];
+  scores?: { userId: string; points: number; target: number }[];
+}
 
 interface UpdateMeBody {
   displayName?: string;
@@ -92,6 +99,87 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       return reply.send({
         success: true,
         data: { ...user, avatarUrl: user.avatarUrl ?? null },
+      });
+    },
+  );
+
+  fastify.get(
+    '/me/history',
+    { schema: myHistorySchema, preHandler: fastify.authenticate },
+    async (request, reply) => {
+      const userId = request.user.id;
+
+      // Rooms the user belongs to (active or past membership).
+      const memberships = await fastify.prisma.membership.findMany({
+        where: { userId },
+        select: { roomId: true },
+      });
+      const roomIds = memberships.map((m) => m.roomId);
+
+      const cycles = await fastify.prisma.cycle.findMany({
+        where: { roomId: { in: roomIds }, status: 'ended' },
+        orderBy: { endsAt: 'desc' },
+        include: { room: { select: { id: true, name: true } } },
+      });
+
+      let participations = 0;
+      let wins = 0;
+      let losses = 0;
+      let percentSum = 0;
+      let percentCount = 0;
+      const recent: Array<{
+        cycleId: string;
+        roomId: string;
+        roomName: string;
+        cycleNumber: number;
+        endsAt: string;
+        outcome: 'won' | 'lost' | 'participated';
+      }> = [];
+
+      for (const c of cycles) {
+        const result = c.resultJson as StoredResult | null;
+        if (!result) continue;
+        const myScore = result.scores?.find((s) => s.userId === userId);
+        if (!myScore) continue; // user was not scored this cycle
+
+        participations++;
+        const won = !!result.winners?.some((w) => w.userId === userId);
+        const lost = !!result.losers?.some((l) => l.userId === userId);
+        if (won) wins++;
+        if (lost) losses++;
+
+        if (myScore.target > 0) {
+          percentSum += Math.min(
+            100,
+            Math.round((myScore.points / myScore.target) * 100),
+          );
+          percentCount++;
+        }
+
+        if (recent.length < 20) {
+          recent.push({
+            cycleId: c.id,
+            roomId: c.room.id,
+            roomName: c.room.name,
+            cycleNumber: c.cycleNumber,
+            endsAt: c.endsAt.toISOString(),
+            outcome: won ? 'won' : lost ? 'lost' : 'participated',
+          });
+        }
+      }
+
+      return reply.send({
+        success: true,
+        data: {
+          participations,
+          wins,
+          losses,
+          avgPercent:
+            percentCount > 0
+              ? Math.round(percentSum / percentCount)
+              : 0,
+          recent,
+        },
       });
     },
   );

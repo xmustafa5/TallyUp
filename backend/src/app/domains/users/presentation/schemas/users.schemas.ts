@@ -76,6 +76,46 @@ profile. Used by the invite flow. Never exposes email or phone.
   },
 };
 
+export const myHistorySchema = {
+  tags: ['Users'],
+  summary: 'My cross-room history',
+  description: `
+Aggregated personal stats across every room the user is a member of
+(PRD 4.6): total completed cycles participated in, wins, losses, and
+average target-completion percentage.
+
+**Returns**
+- \`participations\`, \`wins\`, \`losses\`, \`avgPercent\` (0-100)
+- \`recent\`: the most recent ended cycles with the user's outcome
+  `,
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: SuccessResponse(
+      Type.Object({
+        participations: Type.Integer(),
+        wins: Type.Integer(),
+        losses: Type.Integer(),
+        avgPercent: Type.Number(),
+        recent: Type.Array(
+          Type.Object({
+            cycleId: Type.String({ format: 'uuid' }),
+            roomId: Type.String({ format: 'uuid' }),
+            roomName: Type.String(),
+            cycleNumber: Type.Integer(),
+            endsAt: Type.String({ format: 'date-time' }),
+            outcome: Type.Union([
+              Type.Literal('won'),
+              Type.Literal('lost'),
+              Type.Literal('participated'),
+            ]),
+          }),
+        ),
+      }),
+    ),
+    401: { $ref: 'UnauthorizedError#' },
+  },
+};
+
 export const deleteMeSchema = {
   tags: ['Users'],
   summary: 'Delete my account',

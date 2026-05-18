@@ -15,6 +15,19 @@ const CheckInItem = Type.Object({
   undoneAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
 });
 
+// Activity-feed row: a check-in joined with its author's public profile.
+const ActivityItem = Type.Intersect([
+  CheckInItem,
+  Type.Object({
+    user: Type.Object({
+      id: Type.String({ format: 'uuid' }),
+      publicId: Type.String(),
+      displayName: Type.String(),
+      avatarUrl: Type.Union([Type.String(), Type.Null()]),
+    }),
+  }),
+]);
+
 const CreateResult = Type.Object({
   checkIn: CheckInItem,
   myPoints: Type.Integer(),
@@ -81,7 +94,7 @@ with \`undoneAt\` set.
     }),
   ]),
   response: {
-    200: PaginatedResponse(CheckInItem),
+    200: PaginatedResponse(ActivityItem),
     401: { $ref: 'UnauthorizedError#' },
     403: { $ref: 'ForbiddenError#' },
     404: { $ref: 'NotFoundError#' },

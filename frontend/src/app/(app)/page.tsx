@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Plus, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRoomsQuery } from '@/hooks/use-rooms';
 import { PageHeader } from '@/components/shared/page-header';
 import { CycleCountdown } from '@/components/shared/cycle-countdown';
@@ -10,25 +11,29 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { SkeletonCard } from '@/components/shared/skeleton';
 
-const STATUS_LABEL: Record<string, string> = {
-  draft: 'Draft',
-  active: 'Active',
-  paused: 'Paused',
-  archived: 'Archived',
+const STATUS_KEY: Record<
+  string,
+  'statusDraft' | 'statusActive' | 'statusPaused' | 'statusArchived'
+> = {
+  draft: 'statusDraft',
+  active: 'statusActive',
+  paused: 'statusPaused',
+  archived: 'statusArchived',
 };
 
 export default function HomePage() {
+  const t = useTranslations('rooms');
   const { data: rooms, isLoading } = useRoomsQuery();
 
   return (
     <div>
       <PageHeader
-        title="Your rooms"
-        description="Challenges you're part of"
+        title={t('title')}
+        description={t('subtitle')}
         action={
           <Button render={<Link href="/rooms/new" />} size="sm">
-            <Plus className="mr-1.5 size-4" />
-            New room
+            <Plus className="me-1.5 size-4" />
+            {t('newRoom')}
           </Button>
         }
       />
@@ -45,14 +50,13 @@ export default function HomePage() {
         {!isLoading && rooms?.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
             <div className="text-4xl">🎯</div>
-            <h2 className="mt-3 text-lg font-semibold">No rooms yet</h2>
+            <h2 className="mt-3 text-lg font-semibold">{t('emptyTitle')}</h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Create a room, invite friends by their User ID, and start a
-              challenge.
+              {t('emptyDescription')}
             </p>
             <Button render={<Link href="/rooms/new" />} className="mt-4" size="sm">
-              <Plus className="mr-1.5 size-4" />
-              Create a room
+              <Plus className="me-1.5 size-4" />
+              {t('createRoom')}
             </Button>
           </div>
         )}
@@ -71,7 +75,9 @@ export default function HomePage() {
                             {room.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {room.myRole === 'admin' ? 'Admin' : 'Member'}
+                            {room.myRole === 'admin'
+                              ? t('admin')
+                              : t('member')}
                           </p>
                         </div>
                       </div>
@@ -80,15 +86,16 @@ export default function HomePage() {
                           room.status === 'active' ? 'default' : 'secondary'
                         }
                       >
-                        {STATUS_LABEL[room.status] ?? room.status}
+                        {STATUS_KEY[room.status]
+                          ? t(STATUS_KEY[room.status])
+                          : room.status}
                       </Badge>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between">
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="size-3" />
-                        {room.memberCount} member
-                        {room.memberCount === 1 ? '' : 's'}
+                        {t('memberCount', { count: room.memberCount })}
                       </span>
                       {room.currentCycle && (
                         <CycleCountdown endsAt={room.currentCycle.endsAt} />

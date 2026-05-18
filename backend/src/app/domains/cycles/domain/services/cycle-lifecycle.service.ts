@@ -47,6 +47,41 @@ export async function scheduleCycleEnd(
 }
 
 /**
+ * Schedule the halfway-behind and 24h-deadline reminder jobs for a cycle
+ * (PRD 4.7). Each fans out at run time to members who are behind target
+ * and have the matching notification preference enabled. No-ops without
+ * a queue. Reminders in the past are simply skipped.
+ */
+export async function scheduleCycleReminders(
+  fastify: FastifyInstance,
+  cycleId: string,
+  startsAt: Date,
+  endsAt: Date,
+): Promise<void> {
+  const queue = fastify.queues?.default;
+  if (!queue) return;
+
+  const now = Date.now();
+  const halfwayAt = startsAt.getTime() + (endsAt.getTime() - startsAt.getTime()) / 2;
+  const deadlineAt = endsAt.getTime() - 24 * 60 * 60 * 1000;
+
+  if (halfwayAt > now) {
+    await queue.add(
+      'cycle-halfway-reminder',
+      { cycleId },
+      { delay: halfwayAt - now, jobId: `halfway-${cycleId}` },
+    );
+  }
+  if (deadlineAt > now) {
+    await queue.add(
+      'cycle-deadline-warning',
+      { cycleId },
+      { delay: deadlineAt - now, jobId: `deadline-${cycleId}` },
+    );
+  }
+}
+
+/**
  * Create the first cycle for a room and transition it to `active`.
  * Called by POST /rooms/:id/start. Idempotent-ish: caller guarantees the
  * room is in `draft`.
@@ -78,6 +113,12 @@ export async function startFirstCycle(
   });
 
   const endJobId = await scheduleCycleEnd(fastify, cycle.id, room.id, window.endsAt);
+  await scheduleCycleReminders(
+    fastify,
+    cycle.id,
+    window.startsAt,
+    window.endsAt,
+  );
 
   await fastify.prisma.room.update({
     where: { id: room.id },

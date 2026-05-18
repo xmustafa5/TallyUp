@@ -179,13 +179,31 @@ export default async function checkinsRoutes(fastify: FastifyInstance) {
           orderBy: { createdAt: 'desc' },
           skip,
           take,
+          include: {
+            user: {
+              select: {
+                id: true,
+                publicId: true,
+                displayName: true,
+                avatarUrl: true,
+              },
+            },
+          },
         }),
         fastify.prisma.checkIn.count({ where }),
       ]);
 
       return reply.send({
         success: true,
-        data: rows.map(serialize),
+        data: rows.map((r) => ({
+          ...serialize(r),
+          user: {
+            id: r.user.id,
+            publicId: r.user.publicId,
+            displayName: r.user.displayName,
+            avatarUrl: r.user.avatarUrl ?? null,
+          },
+        })),
         meta: paginationMeta(total, page, pageSize),
       });
     },

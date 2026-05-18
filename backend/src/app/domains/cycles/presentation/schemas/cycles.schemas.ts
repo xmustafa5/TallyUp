@@ -88,6 +88,44 @@ export const getCycleSchema = {
   },
 };
 
+export const tieBreakSchema = {
+  tags: ['Cycles'],
+  summary: 'Resolve a cycle tie-break',
+  description: `
+Finalize a cycle whose result has a pending tie-break (PRD 6.1). Admin
+only.
+
+**Behavior**
+- \`include_all\` keeps every tied member on the affected side
+- \`manual\` keeps only the explicitly picked tied members
+- The stored result's \`tieBreakRequired\` flag is cleared on success
+
+**Restrictions**
+- The cycle must be ended and still have an unresolved tie-break
+  `,
+  security: [{ bearerAuth: [] }],
+  params: Type.Object({ cycleId: Type.String({ format: 'uuid' }) }),
+  body: Type.Union([
+    Type.Object({ pick: Type.Literal('include_all') }),
+    Type.Object({
+      pick: Type.Literal('manual'),
+      winners: Type.Optional(Type.Array(Type.String({ format: 'uuid' }))),
+      losers: Type.Optional(Type.Array(Type.String({ format: 'uuid' }))),
+    }),
+  ]),
+  response: {
+    200: SuccessResponse(
+      Type.Object({
+        resultJson: Type.Record(Type.String(), Type.Unknown()),
+      }),
+    ),
+    400: { $ref: 'BadRequestError#' },
+    401: { $ref: 'UnauthorizedError#' },
+    403: { $ref: 'ForbiddenError#' },
+    404: { $ref: 'NotFoundError#' },
+  },
+};
+
 export const advanceCycleSchema = {
   tags: ['Cycles'],
   summary: '[TEST ONLY] Force a cycle to end now',

@@ -5,7 +5,11 @@ import {
   type RuleSnapshot,
   type CycleResult,
 } from './rule-evaluator.service';
-import { computeNextEndsAt, scheduleCycleEnd } from './cycle-lifecycle.service';
+import {
+  computeNextEndsAt,
+  scheduleCycleEnd,
+  scheduleCycleReminders,
+} from './cycle-lifecycle.service';
 import type { PeriodType } from './cycle-scheduler.service';
 import { notify } from '../../../notifications/domain/services/notification.service';
 
@@ -131,6 +135,7 @@ export async function processCycleEnd(
     });
 
     const endJobId = await scheduleCycleEnd(fastify, next.id, room.id, nextEndsAt);
+    await scheduleCycleReminders(fastify, next.id, nextStartsAt, nextEndsAt);
     await prisma.room.update({
       where: { id: room.id },
       data: { currentCycle: { connect: { id: next.id } } },

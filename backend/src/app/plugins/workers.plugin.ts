@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin';
 import { Worker } from 'bullmq';
 import { processCycleEnd } from '../domains/cycles/domain/services/cycle-end.service';
+import { processCycleReminder } from '../domains/cycles/domain/services/cycle-reminder.service';
 import {
   sendPushNotifications,
   type PushMessageInput,
@@ -38,14 +39,34 @@ export default fp(
     const cycleEndWorker = new Worker(
       'default-jobs',
       async (job) => {
-        if (job.name !== 'cycle-end') return;
-        const { cycleId } = job.data as { cycleId: string; roomId: string };
-        fastify.log.info({ cycleId }, 'Processing cycle-end job');
-        const outcome = await processCycleEnd(fastify, cycleId);
-        fastify.log.info(
-          { cycleId, processed: outcome.processed },
-          'cycle-end job finished',
-        );
+        if (job.name === 'cycle-end') {
+          const { cycleId } = job.data as { cycleId: string; roomId: string };
+          fastify.log.info({ cycleId }, 'Processing cycle-end job');
+          const outcome = await processCycleEnd(fastify, cycleId);
+          fastify.log.info(
+            { cycleId, processed: outcome.processed },
+            'cycle-end job finished',
+          );
+          return;
+        }
+        if (
+          job.name === 'cycle-halfway-reminder' ||
+          job.name === 'cycle-deadline-warning'
+        ) {
+          const { cycleId } = job.data as { cycleId: string };
+          const kind =
+            job.name === 'cycle-halfway-reminder' ? 'halfway' : 'deadline';
+          const { notified } = await processCycleReminder(
+            fastify,
+            cycleId,
+            kind,
+          );
+          fastify.log.info(
+            { cycleId, kind, notified },
+            'cycle reminder job finished',
+          );
+          return;
+        }
       },
       { connection },
     );

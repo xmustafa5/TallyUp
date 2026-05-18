@@ -10,9 +10,15 @@ import {
 import { buildLeaderboard } from '../../domain/services/leaderboard.service';
 import { processCycleEnd } from '../../domain/services/cycle-end.service';
 import {
+  applyTieBreak,
+  type TieBreakChoice,
+} from '../../domain/services/tie-break.service';
+import type { CycleResult } from '../../domain/services/rule-evaluator.service';
+import {
   listCyclesSchema,
   getCurrentCycleSchema,
   getCycleSchema,
+  tieBreakSchema,
   advanceCycleSchema,
 } from '../schemas/cycles.schemas';
 
@@ -122,6 +128,48 @@ export default async function cyclesRoutes(fastify: FastifyInstance) {
           leaderboard,
           resultJson: (cycle.resultJson as Record<string, unknown> | null) ?? null,
         },
+      });
+    },
+  );
+
+  // POST /cycles/:cycleId/tie-break  -- admin resolves a pending tie
+  fastify.post<{ Params: { cycleId: string }; Body: TieBreakChoice }>(
+    '/cycles/:cycleId/tie-break',
+    {
+      schema: tieBreakSchema,
+      preHandler: async (request, reply) => {
+        const cycle = await fastify.prisma.cycle.findUnique({
+          where: { id: request.params.cycleId },
+          select: { roomId: true },
+        });
+        if (!cycle) return reply.notFound('Cycle not found');
+        (request.params as Record<string, string>).id = cycle.roomId;
+        await requireAdmin(request, reply);
+      },
+    },
+    async (request, reply) => {
+      const cycle = await fastify.prisma.cycle.findUnique({
+        where: { id: request.params.cycleId },
+      });
+      if (!cycle) return reply.notFound('Cycle not found');
+      if (cycle.status !== 'ended' || !cycle.resultJson) {
+        return reply.badRequest('Cycle has no result to resolve');
+      }
+
+      const result = cycle.resultJson as unknown as CycleResult;
+      if (!result.tieBreakRequired) {
+        return reply.badRequest('This cycle has no pending tie-break');
+      }
+
+      const finalized = applyTieBreak(result, request.body);
+      await fastify.prisma.cycle.update({
+        where: { id: cycle.id },
+        data: { resultJson: finalized as unknown as object },
+      });
+
+      return reply.send({
+        success: true,
+        data: { resultJson: finalized as unknown as Record<string, unknown> },
       });
     },
   );
