@@ -58,7 +58,10 @@
     "emptyDescription": "Create a room and invite friends to start a challenge.",
     "admin": "Admin",
     "member": "Member",
-    "memberCount": { "one": "%{count} member", "other": "%{count} members" },
+    "memberCount": {
+      "one": "%{count} member",
+      "other": "%{count} members"
+    },
     "roleAndMembers": "%{role} · %{members}",
     "statusDraft": "draft",
     "statusActive": "active",
@@ -141,7 +144,12 @@
     "archiveRoom": "Archive room",
     "archiveConfirm": "This cannot be undone.",
     "cancel": "Cancel",
-    "archive": "Archive"
+    "archive": "Archive",
+    "deleteRoom": "Delete room",
+    "deleteRoomConfirm": "Delete this room permanently? This cannot be undone.",
+    "deleteFailed": "Could not delete the room",
+    "archiveFailed": "Could not archive the room",
+    "roomArchivedReadOnly": "This room is archived and read-only. Only its history is available."
   },
   "createRoom": {
     "title": "New room",

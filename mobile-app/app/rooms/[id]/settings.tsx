@@ -13,6 +13,7 @@ import {
   useRoomQuery,
   usePatchMember,
   useArchiveRoom,
+  useDeleteRoom,
 } from '@/hooks/use-rooms';
 import { useSendInvitation } from '@/hooks/use-invitations';
 import { roomsService } from '@/services/rooms';
@@ -39,6 +40,7 @@ export default function RoomSettingsScreen() {
   const sendInvite = useSendInvitation(id);
   const patchMember = usePatchMember(id);
   const archive = useArchiveRoom();
+  const removeRoom = useDeleteRoom();
   const [publicId, setPublicId] = useState('');
   const [targets, setTargets] = useState<Record<string, string>>({});
 
@@ -255,37 +257,98 @@ export default function RoomSettingsScreen() {
       </View>
 
       {/* Danger zone */}
-      <Pressable
-        onPress={() =>
-          Alert.alert(
-            tr('settings.archiveRoom'),
-            tr('settings.archiveConfirm'),
-            [
-              { text: tr('settings.cancel'), style: 'cancel' },
-              {
-                text: tr('settings.archive'),
-                style: 'destructive',
-                onPress: () =>
-                  archive.mutate(id, {
-                    onSuccess: () => router.replace('/(tabs)'),
-                  }),
-              },
-            ],
-          )
-        }
-        style={{
-          borderWidth: 1.5,
-          borderColor: t.error,
-          borderRadius: radii.md,
-          borderCurve: 'continuous',
-          paddingVertical: 12,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={[typography.label, { color: t.error }]}>
-          {tr('settings.archiveRoom')}
+      {room.status === 'draft' && (
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              tr('settings.deleteRoom'),
+              tr('settings.deleteRoomConfirm'),
+              [
+                { text: tr('settings.cancel'), style: 'cancel' },
+                {
+                  text: tr('settings.deleteRoom'),
+                  style: 'destructive',
+                  onPress: () =>
+                    removeRoom.mutate(id, {
+                      onSuccess: () => router.replace('/(tabs)'),
+                      onError: (e: unknown) =>
+                        Alert.alert(
+                          tr('settings.error'),
+                          (e as { response?: { data?: { message?: string } } })
+                            ?.response?.data?.message ??
+                            tr('settings.deleteFailed'),
+                        ),
+                    }),
+                },
+              ],
+            )
+          }
+          style={{
+            borderWidth: 1.5,
+            borderColor: t.error,
+            borderRadius: radii.md,
+            borderCurve: 'continuous',
+            paddingVertical: 12,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={[typography.label, { color: t.error }]}>
+            {tr('settings.deleteRoom')}
+          </Text>
+        </Pressable>
+      )}
+
+      {(room.status === 'active' || room.status === 'paused') && (
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              tr('settings.archiveRoom'),
+              tr('settings.archiveConfirm'),
+              [
+                { text: tr('settings.cancel'), style: 'cancel' },
+                {
+                  text: tr('settings.archive'),
+                  style: 'destructive',
+                  onPress: () =>
+                    archive.mutate(id, {
+                      onSuccess: () => router.replace('/(tabs)'),
+                      onError: (e: unknown) =>
+                        Alert.alert(
+                          tr('settings.error'),
+                          (e as { response?: { data?: { message?: string } } })
+                            ?.response?.data?.message ??
+                            tr('settings.archiveFailed'),
+                        ),
+                    }),
+                },
+              ],
+            )
+          }
+          style={{
+            borderWidth: 1.5,
+            borderColor: t.error,
+            borderRadius: radii.md,
+            borderCurve: 'continuous',
+            paddingVertical: 12,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={[typography.label, { color: t.error }]}>
+            {tr('settings.archiveRoom')}
+          </Text>
+        </Pressable>
+      )}
+
+      {room.status === 'archived' && (
+        <Text
+          style={[
+            typography.body,
+            { color: t.textTertiary, textAlign: 'center' },
+          ]}
+        >
+          {tr('settings.roomArchivedReadOnly')}
         </Text>
-      </Pressable>
+      )}
     </ScrollView>
   );
 }

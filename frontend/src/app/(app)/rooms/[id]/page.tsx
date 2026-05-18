@@ -158,6 +158,18 @@ export default function RoomOverviewPage({
           )}
         </div>
 
+        {/* Guidance banners for non-running rooms */}
+        {room.status === 'draft' && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            {isAdmin ? t('draftAdminHint') : t('draftMemberHint')}
+          </div>
+        )}
+        {room.status === 'archived' && (
+          <div className="rounded-lg border bg-muted p-4 text-sm text-muted-foreground">
+            {t('archivedNotice')}
+          </div>
+        )}
+
         {/* My progress */}
         {cycle && me && (
           <Card>

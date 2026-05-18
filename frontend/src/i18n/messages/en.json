@@ -85,7 +85,10 @@
     "couldNotRecordCheckin": "Could not record check-in",
     "noMembersScored": "No members scored yet.",
     "you": "(you)",
-    "streakLabel": "{count, plural, one {# cycle streak} other {# cycle streak}}"
+    "streakLabel": "{count, plural, one {# cycle streak} other {# cycle streak}}",
+    "draftAdminHint": "This room hasn’t started. Open Settings to set each member’s target and invite people, then click “Start challenge” to begin tracking points.",
+    "draftMemberHint": "This room hasn’t started yet. The admin needs to start the challenge before points can be tracked.",
+    "archivedNotice": "This room is archived and read-only. Only its history is available."
   },
   "activity": {
     "title": "Activity",
@@ -124,7 +127,16 @@
     "transferFailed": "Transfer failed",
     "dangerZone": "Danger zone",
     "archiveRoom": "Archive room",
-    "roomArchived": "Room archived"
+    "roomArchived": "Room archived",
+    "deleteRoom": "Delete room",
+    "deleteRoomHint": "This room has not started yet. You can delete it to discard it entirely.",
+    "deleteRoomConfirm": "Delete this room permanently? This cannot be undone.",
+    "roomDeleted": "Room deleted",
+    "deleteFailed": "Could not delete the room",
+    "archiveRoomHint": "Archiving ends the room. It becomes read-only and only its history stays visible.",
+    "archiveRoomConfirm": "Archive this room? It will become read-only and cannot be reactivated.",
+    "archiveFailed": "Could not archive the room",
+    "roomArchivedReadOnly": "This room is archived and read-only. Only its history is available."
   },
   "createRoom": {
     "title": "New room",

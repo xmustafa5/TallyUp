@@ -18,19 +18,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { RoomTemplate } from '@/types/tallyup';
 
+/**
+ * Optional numeric form field. DOM <input type="number"> emits "" when
+ * empty (never undefined), and `z.coerce.number()` turns "" into 0 which
+ * would fail `.min(1)` and silently block submit on a hidden/unused
+ * field. So model these as optional strings (matching what `register`
+ * yields) and validate the numeric range only when a value is present;
+ * conversion to number happens in `onSubmit` via `toInt()`.
+ */
+function optionalNumStr(min: number, max: number, msg: string) {
+  return z
+    .string()
+    .optional()
+    .refine(
+      (v) => {
+        if (v === undefined || v === '') return true;
+        const n = Number(v);
+        return Number.isInteger(n) && n >= min && n <= max;
+      },
+      { message: msg },
+    );
+}
+
+function toInt(v: string | undefined): number | null {
+  if (v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : null;
+}
+
 const schema = z
   .object({
     name: z.string().min(1, 'errorNameRequired').max(80),
     icon: z.string().max(8).optional(),
     description: z.string().max(500).optional(),
     periodType: z.enum(['week', 'month', 'custom', 'oneshot']),
-    customDays: z.coerce.number().int().min(1).max(365).optional(),
+    customDays: optionalNumStr(1, 365, 'enterNumberOfDays'),
     startDayOfWeek: z.string().optional(),
-    startDayOfMonth: z.coerce.number().int().min(1).max(28).optional(),
+    startDayOfMonth: optionalNumStr(1, 28, 'enterNumberOfDays'),
     winnerRule: z.enum(['none', 'highest', 'lowest', 'top_n', 'threshold']),
     loserRule: z.enum(['none', 'lowest', 'highest', 'bottom_n', 'threshold']),
-    winnerN: z.coerce.number().int().min(1).optional(),
-    loserN: z.coerce.number().int().min(1).optional(),
+    winnerN: optionalNumStr(1, 999, 'enterNumberOfDays'),
+    loserN: optionalNumStr(1, 999, 'enterNumberOfDays'),
     capAtTarget: z.boolean(),
     stake: z.string().max(280).optional(),
   })
@@ -55,13 +83,13 @@ function templateToForm(tpl: RoomTemplate): FormValues {
     icon: tpl.icon || undefined,
     description: tpl.description || undefined,
     periodType: tpl.periodType,
-    customDays: tpl.customDays ?? undefined,
+    customDays: tpl.customDays != null ? String(tpl.customDays) : undefined,
     startDayOfWeek: undefined,
     startDayOfMonth: undefined,
     winnerRule: tpl.winnerRule,
     loserRule: tpl.loserRule,
-    winnerN: tpl.winnerN ?? undefined,
-    loserN: tpl.loserN ?? undefined,
+    winnerN: tpl.winnerN != null ? String(tpl.winnerN) : undefined,
+    loserN: tpl.loserN != null ? String(tpl.loserN) : undefined,
     capAtTarget: tpl.capAtTarget,
     stake: tpl.stake || undefined,
   };
@@ -105,27 +133,28 @@ export default function CreateRoomPage() {
   }
 
   function onSubmit(values: FormValues) {
+    const usesDays = ['custom', 'oneshot'].includes(values.periodType);
     createRoom.mutate(
       {
         name: values.name,
         icon: values.icon || null,
         description: values.description || null,
         periodType: values.periodType,
-        customDays: ['custom', 'oneshot'].includes(values.periodType)
-          ? values.customDays
-          : null,
+        customDays: usesDays ? toInt(values.customDays) : null,
         startDayOfWeek:
-          values.periodType === 'week' && values.startDayOfWeek
-            ? Number(values.startDayOfWeek)
+          values.periodType === 'week'
+            ? toInt(values.startDayOfWeek)
             : null,
         startDayOfMonth:
-          values.periodType === 'month' && values.startDayOfMonth
-            ? values.startDayOfMonth
+          values.periodType === 'month'
+            ? toInt(values.startDayOfMonth)
             : null,
         winnerRule: values.winnerRule,
-        winnerN: values.winnerRule === 'top_n' ? values.winnerN : null,
+        winnerN:
+          values.winnerRule === 'top_n' ? toInt(values.winnerN) : null,
         loserRule: values.loserRule,
-        loserN: values.loserRule === 'bottom_n' ? values.loserN : null,
+        loserN:
+          values.loserRule === 'bottom_n' ? toInt(values.loserN) : null,
         capAtTarget: values.capAtTarget,
         stake: values.stake || null,
       },

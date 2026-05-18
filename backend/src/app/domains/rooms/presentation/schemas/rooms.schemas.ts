@@ -310,3 +310,29 @@ export const leaveRoomSchema = {
     404: { $ref: 'NotFoundError#' },
   },
 };
+
+export const deleteRoomSchema = {
+  tags: ['Rooms'],
+  summary: 'Delete a room',
+  description: `
+Permanently delete a room and all of its data (admin only).
+
+**Behavior**
+- Cascades to memberships, cycles, check-ins and invitations
+- Irreversible
+
+**Restrictions**
+- Only allowed for rooms that never ran a cycle (\`draft\` or an
+  \`archived\` room with no cycles). A room with history must be
+  archived, not deleted, to preserve past results (PRD 4.2.4 / 4.6).
+  `,
+  security: [{ bearerAuth: [] }],
+  params: RoomParams,
+  response: {
+    200: Type.Object({ success: Type.Literal(true), message: Type.String() }),
+    400: { $ref: 'BadRequestError#' },
+    401: { $ref: 'UnauthorizedError#' },
+    403: { $ref: 'ForbiddenError#' },
+    404: { $ref: 'NotFoundError#' },
+  },
+};

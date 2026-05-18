@@ -48,6 +48,16 @@ export function useResumeRoom() {
 export function useArchiveRoom() {
   return useRoomAction((id) => roomsService.archive(id));
 }
+export function useDeleteRoom() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => roomsService.remove(id),
+    onSuccess: (_d, id) => {
+      qc.removeQueries({ queryKey: queryKeys.rooms.detail(id) });
+      qc.invalidateQueries({ queryKey: queryKeys.rooms.list() });
+    },
+  });
+}
 
 export function usePatchMember(roomId: string) {
   const qc = useQueryClient();

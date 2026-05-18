@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Loader2, Archive } from 'lucide-react';
+import { UserPlus, Loader2, Archive, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRoomQuery, usePatchMember, useRoomLifecycle } from '@/hooks/use-rooms';
 import { useSendInvitation } from '@/hooks/use-invitations';
@@ -34,7 +34,7 @@ export default function RoomSettingsPage({
   const { data: room, isLoading, refetch } = useRoomQuery(id);
   const sendInvite = useSendInvitation(id);
   const patchMember = usePatchMember(id);
-  const { archive } = useRoomLifecycle();
+  const { archive, remove } = useRoomLifecycle();
   const [publicId, setPublicId] = useState('');
   const [targets, setTargets] = useState<Record<string, string>>({});
 
@@ -192,22 +192,71 @@ export default function RoomSettingsPage({
             <CardTitle>{t('dangerZone')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() =>
-                archive.mutate(id, {
-                  onSuccess: () => {
-                    toast({ type: 'success', message: t('roomArchived') });
-                    router.push('/');
-                  },
-                })
-              }
-              disabled={archive.isPending}
-            >
-              <Archive className="me-1.5 size-4" />
-              {t('archiveRoom')}
-            </Button>
+            {room.status === 'draft' && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {t('deleteRoomHint')}
+                </p>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (!window.confirm(t('deleteRoomConfirm'))) return;
+                    remove.mutate(id, {
+                      onSuccess: () => {
+                        toast({ type: 'success', message: t('roomDeleted') });
+                        router.push('/');
+                      },
+                      onError: (e) =>
+                        toast({
+                          type: 'error',
+                          message: errMsg(e, t('deleteFailed')),
+                        }),
+                    });
+                  }}
+                  disabled={remove.isPending}
+                >
+                  <Trash2 className="me-1.5 size-4" />
+                  {t('deleteRoom')}
+                </Button>
+              </div>
+            )}
+
+            {(room.status === 'active' || room.status === 'paused') && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {t('archiveRoomHint')}
+                </p>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (!window.confirm(t('archiveRoomConfirm'))) return;
+                    archive.mutate(id, {
+                      onSuccess: () => {
+                        toast({ type: 'success', message: t('roomArchived') });
+                        router.push('/');
+                      },
+                      onError: (e) =>
+                        toast({
+                          type: 'error',
+                          message: errMsg(e, t('archiveFailed')),
+                        }),
+                    });
+                  }}
+                  disabled={archive.isPending}
+                >
+                  <Archive className="me-1.5 size-4" />
+                  {t('archiveRoom')}
+                </Button>
+              </div>
+            )}
+
+            {room.status === 'archived' && (
+              <p className="text-sm text-muted-foreground">
+                {t('roomArchivedReadOnly')}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

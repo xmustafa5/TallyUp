@@ -76,6 +76,13 @@ export function useRoomLifecycle() {
       mutationFn: (id: string) => roomsService.archive(id),
       onSuccess: (_d, id) => invalidate(id),
     }),
+    remove: useMutation({
+      mutationFn: (id: string) => roomsService.remove(id),
+      onSuccess: (_d, id) => {
+        qc.removeQueries({ queryKey: queryKeys.rooms.detail(id) });
+        qc.invalidateQueries({ queryKey: queryKeys.rooms.list() });
+      },
+    }),
   };
 }
 

@@ -152,7 +152,12 @@
     "archiveRoom": "أرشفة الغرفة",
     "archiveConfirm": "لا يمكن التراجع عن هذا.",
     "cancel": "إلغاء",
-    "archive": "أرشفة"
+    "archive": "أرشفة",
+    "deleteRoom": "حذف الغرفة",
+    "deleteRoomConfirm": "حذف هذه الغرفة نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteFailed": "تعذّر حذف الغرفة",
+    "archiveFailed": "تعذّرت أرشفة الغرفة",
+    "roomArchivedReadOnly": "هذه الغرفة مؤرشفة وللقراءة فقط. يتوفر سجلها فقط."
   },
   "createRoom": {
     "title": "غرفة جديدة",

@@ -30,6 +30,7 @@ import {
   patchMemberSchema,
   removeMemberSchema,
   leaveRoomSchema,
+  deleteRoomSchema,
 } from '../schemas/rooms.schemas';
 
 const memberInclude = {
@@ -367,6 +368,17 @@ export default async function roomsRoutes(fastify: FastifyInstance) {
       });
       if (!room) return reply.notFound('Room not found');
 
+      // A draft room never ran -- archiving it would create an unusable
+      // read-only dead end. Discard it with DELETE instead.
+      if (room.status === 'draft') {
+        return reply.badRequest(
+          'A draft room cannot be archived. Start it, or delete it instead.',
+        );
+      }
+      if (room.status === 'archived') {
+        return reply.badRequest('Room is already archived');
+      }
+
       const queue = fastify.queues?.default;
       if (queue && room.currentCycle?.endJobId) {
         const job = await queue.getJob(room.currentCycle.endJobId);
@@ -512,6 +524,33 @@ export default async function roomsRoutes(fastify: FastifyInstance) {
         data: { leftAt: new Date() },
       });
       return reply.send({ success: true, message: 'You left the room' });
+    },
+  );
+
+  // DELETE /rooms/:id  -- discard a room that never ran (admin)
+  fastify.delete<{ Params: { id: string } }>(
+    '/rooms/:id',
+    { schema: deleteRoomSchema, preHandler: requireAdmin },
+    async (request, reply) => {
+      const room = await fastify.prisma.room.findUnique({
+        where: { id: request.params.id },
+      });
+      if (!room) return reply.notFound('Room not found');
+
+      const cycleCount = await fastify.prisma.cycle.count({
+        where: { roomId: room.id },
+      });
+      if (cycleCount > 0) {
+        return reply.badRequest(
+          'This room has history and cannot be deleted. Archive it instead to keep past results.',
+        );
+      }
+
+      // Detach the current-cycle FK (none here, but defensive) then
+      // cascade-delete. onDelete: Cascade on the relations handles
+      // memberships/invitations.
+      await fastify.prisma.room.delete({ where: { id: room.id } });
+      return reply.send({ success: true, message: 'Room deleted' });
     },
   );
 }

@@ -55,6 +55,9 @@ export const roomsService = {
     const { data } = await api.post(`/rooms/${id}/archive`);
     return data;
   },
+  async remove(id: string): Promise<void> {
+    await api.delete(`/rooms/${id}`);
+  },
   async members(id: string): Promise<RoomMember[]> {
     const { data } = await api.get(`/rooms/${id}/members`);
     return data;
