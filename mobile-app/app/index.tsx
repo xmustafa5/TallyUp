@@ -1,28 +1,7 @@
-import { Text, View } from 'react-native';
-import { colors, spacing, typography } from '@/constants/theme';
+import { Redirect } from 'expo-router';
 
-export default function HomeScreen() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: spacing.lg,
-        backgroundColor: colors.light.background,
-      }}
-    >
-      <Text style={{ ...typography.h1, color: colors.light.text }}>Welcome</Text>
-      <Text
-        style={{
-          ...typography.body,
-          marginTop: spacing.sm,
-          color: colors.light.textSecondary,
-          textAlign: 'center',
-        }}
-      >
-        Starter template. Replace this screen with your application.
-      </Text>
-    </View>
-  );
+// Entry route. AuthGate (root layout) redirects unauthenticated users to
+// /(auth)/login; authenticated users fall through to the tabs.
+export default function Index() {
+  return <Redirect href="/(tabs)" />;
 }

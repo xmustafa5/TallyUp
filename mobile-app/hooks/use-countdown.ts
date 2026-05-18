@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 
 export interface Countdown {
@@ -14,7 +12,14 @@ export interface Countdown {
 function compute(target: number): Countdown {
   const diff = target - Date.now();
   if (diff <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true, label: 'Ended' };
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isPast: true,
+      label: 'Ended',
+    };
   }
   const s = Math.floor(diff / 1000);
   const days = Math.floor(s / 86400);
@@ -35,29 +40,28 @@ export function useCountdown(endsAtIso: string | null | undefined): Countdown {
   const [state, setState] = useState<Countdown>(() =>
     endsAtIso
       ? compute(new Date(endsAtIso).getTime())
-      : { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true, label: '' },
+      : {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isPast: true,
+          label: '',
+        },
+  );
+
+  const lastTarget = useRef<number | null>(
+    endsAtIso ? new Date(endsAtIso).getTime() : null,
   );
 
   useEffect(() => {
     if (!endsAtIso) return;
     const target = new Date(endsAtIso).getTime();
-    // First tick happens after 1s; the lazy initializer / the keyed
-    // recompute below provides the value for the current render.
+    lastTarget.current = target;
+    setState(compute(target));
     const t = setInterval(() => setState(compute(target)), 1000);
     return () => clearInterval(t);
   }, [endsAtIso]);
-
-  // Recompute synchronously when the target changes, without an effect
-  // (avoids the cascading-render lint and is correct for derived state).
-  const targetMs = endsAtIso ? new Date(endsAtIso).getTime() : null;
-  const lastTarget = useRef<number | null>(targetMs);
-  if (targetMs !== lastTarget.current) {
-    lastTarget.current = targetMs;
-    if (targetMs != null) {
-      const fresh = compute(targetMs);
-      if (fresh.label !== state.label) setState(fresh);
-    }
-  }
 
   return state;
 }

@@ -17,14 +17,14 @@ interface IconPlaceholderProps extends React.SVGProps<SVGSVGElement> {
   remixicon?: string
 }
 
-export function IconPlaceholder({
-  lucide,
-  tabler: _tabler,
-  hugeicons: _hugeicons,
-  phosphor: _phosphor,
-  remixicon: _remixicon,
-  ...props
-}: IconPlaceholderProps) {
+export function IconPlaceholder(allProps: IconPlaceholderProps) {
+  // Strip the icon-library name props; forward only real SVG props.
+  const { lucide, tabler, hugeicons, phosphor, remixicon, ...props } =
+    allProps;
+  void tabler;
+  void hugeicons;
+  void phosphor;
+  void remixicon;
   const icons = LucideIcons as unknown as Record<
     string,
     React.ComponentType<React.SVGProps<SVGSVGElement>>
