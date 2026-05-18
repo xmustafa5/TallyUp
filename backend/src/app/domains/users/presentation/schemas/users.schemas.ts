@@ -86,6 +86,8 @@ average target-completion percentage.
 
 **Returns**
 - \`participations\`, \`wins\`, \`losses\`, \`avgPercent\` (0-100)
+- \`bestStreak\`, \`currentStreak\` (global, consecutive target-reaching cycles)
+- \`badges\`: every badge the user has earned (code/name/icon/earnedAt)
 - \`recent\`: the most recent ended cycles with the user's outcome
   `,
   security: [{ bearerAuth: [] }],
@@ -96,6 +98,16 @@ average target-completion percentage.
         wins: Type.Integer(),
         losses: Type.Integer(),
         avgPercent: Type.Number(),
+        currentStreak: Type.Integer(),
+        bestStreak: Type.Integer(),
+        badges: Type.Array(
+          Type.Object({
+            code: Type.String(),
+            name: Type.String(),
+            icon: Type.String(),
+            earnedAt: Type.String({ format: 'date-time' }),
+          }),
+        ),
         recent: Type.Array(
           Type.Object({
             cycleId: Type.String({ format: 'uuid' }),

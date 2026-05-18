@@ -11,8 +11,9 @@ RUN pnpm db:generate
 
 COPY . .
 
-# Startup: push schema then start dev server
-RUN printf '#!/bin/sh\nset -e\necho "Pushing database schema..."\npnpm db:push\necho "Starting dev server..."\nexec pnpm dev\n' > /app/start.sh && chmod +x /app/start.sh
+# Startup: push schema, regenerate Prisma client (Prisma 7 `db push`
+# does NOT regenerate the client), then start the dev server
+RUN printf '#!/bin/sh\nset -e\necho "Pushing database schema..."\npnpm db:push\necho "Regenerating Prisma client..."\npnpm db:generate\necho "Starting dev server..."\nexec pnpm dev\n' > /app/start.sh && chmod +x /app/start.sh
 
 EXPOSE 3000
 

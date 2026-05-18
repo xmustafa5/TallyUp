@@ -1,18 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCreateRoom } from '@/hooks/use-rooms';
+import { useTemplates } from '@/hooks/use-templates';
 import { useToast } from '@/components/shared/toast';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import type { RoomTemplate } from '@/types/tallyup';
 
 const schema = z
   .object({
@@ -38,6 +42,31 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
+const defaultValues: Partial<FormValues> = {
+  periodType: 'week',
+  winnerRule: 'highest',
+  loserRule: 'lowest',
+  capAtTarget: true,
+};
+
+function templateToForm(tpl: RoomTemplate): FormValues {
+  return {
+    name: tpl.name,
+    icon: tpl.icon || undefined,
+    description: tpl.description || undefined,
+    periodType: tpl.periodType,
+    customDays: tpl.customDays ?? undefined,
+    startDayOfWeek: undefined,
+    startDayOfMonth: undefined,
+    winnerRule: tpl.winnerRule,
+    loserRule: tpl.loserRule,
+    winnerN: tpl.winnerN ?? undefined,
+    loserN: tpl.loserN ?? undefined,
+    capAtTarget: tpl.capAtTarget,
+    stake: tpl.stake || undefined,
+  };
+}
+
 const selectCls =
   'h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
@@ -46,24 +75,34 @@ export default function CreateRoomPage() {
   const router = useRouter();
   const { toast } = useToast();
   const createRoom = useCreateRoom();
+  const { data: templates, isError: templatesError } = useTemplates();
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
+    null,
+  );
   const {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      periodType: 'week',
-      winnerRule: 'highest',
-      loserRule: 'lowest',
-      capAtTarget: true,
-    },
+    defaultValues,
   });
 
   const periodType = watch('periodType');
   const winnerRule = watch('winnerRule');
   const loserRule = watch('loserRule');
+
+  function selectTemplate(tpl: RoomTemplate) {
+    setSelectedTemplate(tpl.code);
+    reset(templateToForm(tpl));
+  }
+
+  function startFromScratch() {
+    setSelectedTemplate(null);
+    reset(defaultValues);
+  }
 
   function onSubmit(values: FormValues) {
     createRoom.mutate(
@@ -113,6 +152,76 @@ export default function CreateRoomPage() {
         onSubmit={handleSubmit(onSubmit)}
         className="mx-auto max-w-2xl space-y-6 p-6"
       >
+        {templatesError ? (
+          <p className="text-sm text-muted-foreground">
+            {t('couldNotLoadTemplates')}
+          </p>
+        ) : (
+          templates &&
+          templates.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('startFromTemplate')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  {t('startFromTemplateHint')}
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {templates.map((tpl) => {
+                    const active = selectedTemplate === tpl.code;
+                    return (
+                      <button
+                        key={tpl.code}
+                        type="button"
+                        onClick={() => selectTemplate(tpl)}
+                        aria-pressed={active}
+                        className={cn(
+                          'flex items-start gap-3 rounded-md border p-3 text-start transition-colors hover:bg-muted/50',
+                          active &&
+                            'border-primary bg-primary/5 ring-1 ring-primary',
+                        )}
+                      >
+                        <span className="text-xl leading-none" aria-hidden>
+                          {tpl.icon}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium">
+                            {tpl.name}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {tpl.description}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <p
+                    className={cn(
+                      'text-xs text-muted-foreground',
+                      selectedTemplate ? '' : 'invisible',
+                    )}
+                  >
+                    {t('templateSelected')}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={startFromScratch}
+                    disabled={!selectedTemplate}
+                  >
+                    <Sparkles className="me-1.5 size-4" />
+                    {t('startFromScratch')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>{t('basics')}</CardTitle>

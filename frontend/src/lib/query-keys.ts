@@ -13,9 +13,17 @@ export const queryKeys = {
       [...queryKeys.rooms.all, 'detail', id, 'history'] as const,
     members: (id: string) =>
       [...queryKeys.rooms.all, 'detail', id, 'members'] as const,
+    activity: (id: string, page: number) =>
+      [...queryKeys.rooms.all, 'detail', id, 'activity', page] as const,
   },
   cycles: {
     detail: (id: string) => ['cycles', id] as const,
+  },
+  users: {
+    history: ['users', 'me', 'history'] as const,
+  },
+  templates: {
+    list: ['templates'] as const,
   },
   invitations: {
     incoming: ['invitations', 'incoming'] as const,

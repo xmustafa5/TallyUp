@@ -2,6 +2,7 @@ import { View, Text } from 'react-native';
 import { colors, spacing, typography, radii } from '@/constants/theme';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Icon } from '@/components/ui/icon';
+import { useI18n } from '@/hooks/use-i18n';
 import type { LeaderboardRow } from '@/types/tallyup';
 
 function initials(name: string) {
@@ -21,6 +22,7 @@ export function Leaderboard({
   currentUserId?: string;
 }) {
   const t = colors.light;
+  const { t: tr } = useI18n();
 
   if (rows.length === 0) {
     return (
@@ -34,7 +36,7 @@ export function Leaderboard({
           },
         ]}
       >
-        No members scored yet.
+        {tr('room.noMembersScored')}
       </Text>
     );
   }
@@ -96,7 +98,7 @@ export function Leaderboard({
                   numberOfLines={1}
                 >
                   {row.displayName}
-                  {isMe ? ' (you)' : ''}
+                  {isMe ? tr('room.you') : ''}
                 </Text>
                 {isLeader && (
                   <Icon name="trophy" size={14} color={t.accent} />
@@ -110,6 +112,19 @@ export function Leaderboard({
                 )}
                 {atRisk && (
                   <Icon name="warning" size={14} color={t.error} />
+                )}
+                {row.streak >= 2 && (
+                  <Text
+                    style={[
+                      typography.caption,
+                      {
+                        color: t.textTertiary,
+                        fontVariant: ['tabular-nums'],
+                      },
+                    ]}
+                  >
+                    {tr('room.streakBadge', { count: row.streak })}
+                  </Text>
                 )}
               </View>
               <ProgressBar percent={row.percent} height={6} />

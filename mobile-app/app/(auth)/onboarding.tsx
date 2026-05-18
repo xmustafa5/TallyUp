@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { colors, spacing, typography, radii } from '@/constants/theme';
 import { successNotification } from '@/lib/haptics';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { publicId } = useLocalSearchParams<{ publicId: string }>();
+  const { t: tr } = useI18n();
   const t = colors.light;
   const [copied, setCopied] = useState(false);
   const id = publicId ?? '';
@@ -23,7 +25,7 @@ export default function OnboardingScreen() {
 
   async function share() {
     await Share.share({
-      message: `Add me on TallyUp! My User ID is ${id}`,
+      message: tr('onboarding.shareMessage', { id }),
     });
   }
 
@@ -40,7 +42,7 @@ export default function OnboardingScreen() {
       <View style={{ alignItems: 'center', gap: spacing.sm }}>
         <Icon name="checkmark-circle" size={56} tone="primary" />
         <Text style={[typography.h1, { color: t.text }]}>
-          You&apos;re all set
+          {tr('onboarding.allSet')}
         </Text>
         <Text
           style={[
@@ -48,7 +50,7 @@ export default function OnboardingScreen() {
             { color: t.textSecondary, textAlign: 'center' },
           ]}
         >
-          Share your User ID so friends can invite you to challenge rooms.
+          {tr('onboarding.shareIdSubtitle')}
         </Text>
       </View>
 
@@ -63,7 +65,7 @@ export default function OnboardingScreen() {
         }}
       >
         <Text style={[typography.caption, { color: t.textTertiary }]}>
-          YOUR USER ID
+          {tr('onboarding.yourUserId')}
         </Text>
         <Text
           selectable
@@ -93,7 +95,7 @@ export default function OnboardingScreen() {
               tone="primary"
             />
             <Text style={[typography.label, { color: t.primary }]}>
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? tr('onboarding.copied') : tr('onboarding.copy')}
             </Text>
           </Pressable>
           <Pressable
@@ -110,14 +112,14 @@ export default function OnboardingScreen() {
           >
             <Icon name="share-outline" size={16} tone="primary" />
             <Text style={[typography.label, { color: t.primary }]}>
-              Share
+              {tr('onboarding.share')}
             </Text>
           </Pressable>
         </View>
       </View>
 
       <Button
-        title="Continue"
+        title={tr('onboarding.continue')}
         onPress={() => router.replace('/(tabs)')}
         fullWidth
       />

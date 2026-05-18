@@ -143,6 +143,44 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                <div>
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    {t('streak')}
+                  </p>
+                  <p className="text-sm font-medium">
+                    {t('currentStreak', {
+                      count: history?.currentStreak ?? 0,
+                    })}
+                    <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+                      · {t('bestStreak', { count: history?.bestStreak ?? 0 })}
+                    </span>
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    {t('badges')}
+                  </p>
+                  {history && history.badges.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {history.badges.map((b) => (
+                        <Badge
+                          key={b.code}
+                          variant="secondary"
+                          title={new Date(b.earnedAt).toLocaleDateString()}
+                        >
+                          <span aria-hidden>{b.icon}</span>
+                          {b.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t('noBadges')}
+                    </p>
+                  )}
+                </div>
+
                 {history && history.recent.length > 0 && (
                   <div>
                     <p className="mb-2 text-xs font-medium text-muted-foreground">

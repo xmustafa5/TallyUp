@@ -123,6 +123,10 @@ All errors follow a consistent format:
           name: 'Notifications',
           description: 'In-app notifications and Expo push device tokens',
         },
+        {
+          name: 'Templates',
+          description: 'Public room templates for the create-room wizard',
+        },
       ],
       components: {
         securitySchemes: {

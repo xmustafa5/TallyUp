@@ -6,19 +6,21 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
 import { colors, spacing, typography } from '@/constants/theme';
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('errorEmailInvalid'),
+  password: z.string().min(1, 'errorPasswordRequired'),
 });
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t: tr } = useI18n();
   const t = colors.light;
   const [submitting, setSubmitting] = useState(false);
   const {
@@ -32,7 +34,7 @@ export default function LoginScreen() {
     login.mutate(values, {
       onError: () => {
         setSubmitting(false);
-        Alert.alert('Login failed', 'Invalid email or password');
+        Alert.alert(tr('auth.loginFailed'), tr('auth.invalidCredentials'));
       },
     });
   }
@@ -53,7 +55,7 @@ export default function LoginScreen() {
           TallyUp
         </Text>
         <Text style={[typography.body, { color: t.textSecondary }]}>
-          Challenge your friends. Track the score.
+          {tr('auth.tagline')}
         </Text>
       </View>
 
@@ -63,13 +65,17 @@ export default function LoginScreen() {
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Email"
+              label={tr('auth.email')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               autoCapitalize="none"
               keyboardType="email-address"
-              error={errors.email?.message}
+              error={
+                errors.email?.message
+                  ? tr(`auth.${errors.email.message}`)
+                  : undefined
+              }
             />
           )}
         />
@@ -78,17 +84,21 @@ export default function LoginScreen() {
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Password"
+              label={tr('auth.password')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               secureTextEntry
-              error={errors.password?.message}
+              error={
+                errors.password?.message
+                  ? tr(`auth.${errors.password.message}`)
+                  : undefined
+              }
             />
           )}
         />
         <Button
-          title="Log in"
+          title={tr('auth.logIn')}
           onPress={handleSubmit(onSubmit)}
           loading={submitting}
           fullWidth
@@ -98,7 +108,7 @@ export default function LoginScreen() {
           style={{ alignSelf: 'center' }}
         >
           <Text style={[typography.body, { color: t.primary }]}>
-            No account? Create one
+            {tr('auth.noAccount')}
           </Text>
         </Pressable>
       </View>

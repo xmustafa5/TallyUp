@@ -8,6 +8,7 @@ export interface LeaderboardRow {
   points: number;
   target: number;
   percent: number;
+  streak: number;
 }
 
 /**
@@ -21,7 +22,7 @@ export async function buildLeaderboard(
   roomId: string,
   cycleStartsAt: Date,
 ): Promise<LeaderboardRow[]> {
-  const [memberships, checkIns] = await Promise.all([
+  const [memberships, checkIns, streaks] = await Promise.all([
     prisma.membership.findMany({
       where: {
         roomId,
@@ -36,12 +37,15 @@ export async function buildLeaderboard(
       where: { cycleId, undoneAt: null },
       _sum: { points: true },
     }),
+    prisma.userStreak.findMany({ where: { roomId } }),
   ]);
 
   const pointsByUser = new Map<string, number>();
   for (const row of checkIns) {
     pointsByUser.set(row.userId, row._sum.points ?? 0);
   }
+  const streakByUser = new Map<string, number>();
+  for (const s of streaks) streakByUser.set(s.userId, s.current);
 
   const rows: LeaderboardRow[] = memberships.map((m) => {
     const points = pointsByUser.get(m.userId) ?? 0;
@@ -55,6 +59,7 @@ export async function buildLeaderboard(
       points,
       target: m.target,
       percent,
+      streak: streakByUser.get(m.userId) ?? 0,
     };
   });
 

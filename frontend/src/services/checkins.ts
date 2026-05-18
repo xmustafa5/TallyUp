@@ -1,15 +1,5 @@
 import api from './api';
-import type { CheckInResult, Paginated } from '@/types/tallyup';
-
-interface CheckInRow {
-  id: string;
-  cycleId: string;
-  userId: string;
-  points: number;
-  note: string | null;
-  createdAt: string;
-  undoneAt: string | null;
-}
+import type { CheckInActivity, CheckInResult, Paginated } from '@/types/tallyup';
 
 export const checkinsService = {
   async create(
@@ -22,7 +12,7 @@ export const checkinsService = {
   async list(
     roomId: string,
     params: { cycleId?: string; userId?: string; page?: number; pageSize?: number } = {},
-  ): Promise<Paginated<CheckInRow>> {
+  ): Promise<Paginated<CheckInActivity>> {
     const { data } = await api.get(`/rooms/${roomId}/check-ins`, { params });
     return data;
   },

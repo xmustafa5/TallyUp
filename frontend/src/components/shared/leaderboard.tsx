@@ -1,6 +1,7 @@
 'use client';
 
-import { Crown, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Crown, AlertTriangle, CheckCircle2, Flame } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -22,10 +23,11 @@ export function Leaderboard({
   rows: LeaderboardRow[];
   currentUserId?: string;
 }) {
+  const t = useTranslations('room');
   if (rows.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
-        No members scored yet.
+        {t('noMembersScored')}
       </p>
     );
   }
@@ -59,8 +61,8 @@ export function Leaderboard({
                 <span className="truncate text-sm font-medium">
                   {row.displayName}
                   {isMe && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      (you)
+                    <span className="ms-1 text-xs text-muted-foreground">
+                      {t('you')}
                     </span>
                   )}
                 </span>
@@ -72,6 +74,15 @@ export function Leaderboard({
                 )}
                 {!reached && row.percent < 25 && (
                   <AlertTriangle className="size-3.5 shrink-0 text-destructive" />
+                )}
+                {row.streak >= 2 && (
+                  <span
+                    title={t('streakLabel', { count: row.streak })}
+                    className="inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-orange-500 tabular-nums"
+                  >
+                    <Flame className="size-3.5" />
+                    {row.streak}
+                  </span>
                 )}
               </div>
               <Progress value={row.percent} className="mt-1.5" />

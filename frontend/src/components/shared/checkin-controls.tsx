@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useCreateCheckIn } from '@/hooks/use-checkin';
 import { useToast } from '@/components/shared/toast';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ export function CheckinControls({
   myUserId: string | undefined;
   disabled?: boolean;
 }) {
+  const t = useTranslations('room');
   const checkIn = useCreateCheckIn(roomId, myUserId);
   const { toast } = useToast();
 
@@ -24,7 +26,7 @@ export function CheckinControls({
       onError: (err: unknown) => {
         const msg =
           (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message ?? 'Could not record check-in';
+            ?.data?.message ?? t('couldNotRecordCheckin');
         toast({ type: 'error', message: msg });
       },
     });
@@ -38,10 +40,10 @@ export function CheckinControls({
         disabled={disabled || checkIn.isPending}
       >
         <Loader2
-          className={`mr-2 size-4 animate-spin ${checkIn.isPending ? '' : 'hidden'}`}
+          className={`me-2 size-4 animate-spin ${checkIn.isPending ? '' : 'hidden'}`}
         />
-        <Plus className={`mr-1 size-4 ${checkIn.isPending ? 'hidden' : ''}`} />
-        1 point
+        <Plus className={`me-1 size-4 ${checkIn.isPending ? 'hidden' : ''}`} />
+        {t('checkin1Point')}
       </Button>
       {PRESETS.map((p) => (
         <Button

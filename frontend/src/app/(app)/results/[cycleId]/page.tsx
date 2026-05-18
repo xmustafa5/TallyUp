@@ -2,7 +2,13 @@
 
 import { use, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Frown, ArrowLeft, AlertTriangle } from 'lucide-react';
+import {
+  Trophy,
+  Frown,
+  ArrowLeft,
+  AlertTriangle,
+  Share2,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCycle } from '@/hooks/use-cycles';
 import { useRoomQuery } from '@/hooks/use-rooms';
@@ -164,6 +170,85 @@ function TieBreakBanner({
   );
 }
 
+function ShareResults({
+  cycleId,
+  roomName,
+}: {
+  cycleId: string;
+  roomName: string;
+}) {
+  const t = useTranslations('results');
+  const { toast } = useToast();
+
+  function buildShare() {
+    const url = `${window.location.origin}/results/${cycleId}`;
+    const title = t('shareTitle', { room: roomName });
+    const text = t('shareText', { room: roomName });
+    return { url, title, text };
+  }
+
+  async function onShare() {
+    const { url, title, text } = buildShare();
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch (e) {
+        // User cancelled the native share sheet -- not an error.
+        if ((e as { name?: string })?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ type: 'success', message: t('linkCopied') });
+    } catch {
+      toast({ type: 'error', message: t('couldNotShare') });
+    }
+  }
+
+  const { url, text } = (() => {
+    if (typeof window === 'undefined') {
+      return { url: '', text: t('shareText', { room: roomName }) };
+    }
+    return buildShare();
+  })();
+
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
+    `${text} ${url}`,
+  )}`;
+  const twitterHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    text,
+  )}&url=${encodeURIComponent(url)}`;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button size="sm" variant="outline" onClick={onShare}>
+        <Share2 className="me-1.5 size-4" />
+        {t('share')}
+      </Button>
+      <span className="text-xs text-muted-foreground">{t('shareVia')}</span>
+      <Button
+        size="sm"
+        variant="ghost"
+        render={
+          <a href={whatsappHref} target="_blank" rel="noopener noreferrer" />
+        }
+      >
+        {t('shareWhatsApp')}
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        render={
+          <a href={twitterHref} target="_blank" rel="noopener noreferrer" />
+        }
+      >
+        {t('shareTwitter')}
+      </Button>
+    </div>
+  );
+}
+
 export default function ResultsPage({
   params,
 }: {
@@ -230,6 +315,11 @@ export default function ResultsPage({
                 {t('tieBreakPending')}
               </p>
             )}
+
+            <ShareResults
+              cycleId={cycle.id}
+              roomName={room?.name ?? t('someone')}
+            />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Card>

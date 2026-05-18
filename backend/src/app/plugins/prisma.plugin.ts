@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { seedBadgeCatalog } from '../domains/cycles/domain/services/streak-badge.service';
 
 export default fp(
   async (fastify) => {
@@ -22,6 +23,9 @@ export default fp(
 
     await prisma.$connect();
     fastify.log.info('Prisma client connected to database');
+
+    // Seed the static badge catalog (idempotent upsert by code).
+    await seedBadgeCatalog(prisma);
 
     fastify.decorate('prisma', prisma);
 

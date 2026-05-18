@@ -4,6 +4,7 @@ import type {
   Paginated,
   CycleSummary,
   CycleResult,
+  TieBreakBody,
 } from '@/types/tallyup';
 
 type HistoryItem = CycleSummary & {
@@ -32,6 +33,13 @@ export const cyclesService = {
   },
   async advance(cycleId: string): Promise<{ processed: boolean }> {
     const { data } = await api.post(`/test/cycles/${cycleId}/advance`);
+    return data;
+  },
+  async tieBreak(
+    cycleId: string,
+    body: TieBreakBody,
+  ): Promise<{ resultJson: CycleResult }> {
+    const { data } = await api.post(`/cycles/${cycleId}/tie-break`, body);
     return data;
   },
 };

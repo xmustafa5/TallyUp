@@ -13,6 +13,7 @@ const LeaderboardRow = Type.Object({
   points: Type.Integer(),
   target: Type.Integer(),
   percent: Type.Number(),
+  streak: Type.Integer(),
 });
 
 const CycleSummary = Type.Object({

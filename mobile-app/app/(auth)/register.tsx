@@ -6,20 +6,22 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
 import { colors, spacing, typography } from '@/constants/theme';
 
 const schema = z.object({
-  displayName: z.string().min(1, 'Name is required').max(80),
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'At least 8 characters'),
+  displayName: z.string().min(1, 'errorNameRequired').max(80),
+  email: z.string().email('errorEmailInvalid'),
+  password: z.string().min(8, 'errorPasswordMin'),
 });
 type FormValues = z.infer<typeof schema>;
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
+  const { t: tr } = useI18n();
   const t = colors.light;
   const [submitting, setSubmitting] = useState(false);
   const {
@@ -39,8 +41,8 @@ export default function RegisterScreen() {
           setSubmitting(false);
           const msg =
             (err as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message ?? 'Could not create account';
-          Alert.alert('Sign up failed', msg);
+              ?.data?.message ?? tr('auth.couldNotCreateAccount');
+          Alert.alert(tr('auth.signUpFailed'), msg);
         },
       },
     );
@@ -59,7 +61,7 @@ export default function RegisterScreen() {
     >
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
         <Text style={[typography.h1, { color: t.text }]}>
-          Create your account
+          {tr('auth.createAccountTitle')}
         </Text>
         <Text
           style={[
@@ -67,7 +69,7 @@ export default function RegisterScreen() {
             { color: t.textSecondary, textAlign: 'center' },
           ]}
         >
-          You will get a shareable User ID to invite friends.
+          {tr('auth.registerSubtitle')}
         </Text>
       </View>
 
@@ -77,11 +79,15 @@ export default function RegisterScreen() {
           name="displayName"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Display name"
+              label={tr('auth.displayName')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={errors.displayName?.message}
+              error={
+                errors.displayName?.message
+                  ? tr(`auth.${errors.displayName.message}`)
+                  : undefined
+              }
             />
           )}
         />
@@ -90,13 +96,17 @@ export default function RegisterScreen() {
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Email"
+              label={tr('auth.email')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               autoCapitalize="none"
               keyboardType="email-address"
-              error={errors.email?.message}
+              error={
+                errors.email?.message
+                  ? tr(`auth.${errors.email.message}`)
+                  : undefined
+              }
             />
           )}
         />
@@ -105,17 +115,21 @@ export default function RegisterScreen() {
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Password"
+              label={tr('auth.password')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               secureTextEntry
-              error={errors.password?.message}
+              error={
+                errors.password?.message
+                  ? tr(`auth.${errors.password.message}`)
+                  : undefined
+              }
             />
           )}
         />
         <Button
-          title="Create account"
+          title={tr('auth.createAccount')}
           onPress={handleSubmit(onSubmit)}
           loading={submitting}
           fullWidth
@@ -125,7 +139,7 @@ export default function RegisterScreen() {
           style={{ alignSelf: 'center' }}
         >
           <Text style={[typography.body, { color: t.primary }]}>
-            Already have an account? Log in
+            {tr('auth.haveAccount')}
           </Text>
         </Pressable>
       </View>

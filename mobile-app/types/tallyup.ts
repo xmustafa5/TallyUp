@@ -95,6 +95,7 @@ export interface LeaderboardRow {
   points: number;
   target: number;
   percent: number;
+  streak: number;
 }
 
 export interface RuleParticipant {
@@ -109,8 +110,15 @@ export interface CycleResult {
   winnerRuleApplied: string;
   loserRuleApplied: string;
   loserSkippedDueToOverlap?: boolean;
-  tieBreakRequired?: { kind: string; tiedUserIds: string[] };
+  tieBreakRequired?: {
+    kind: 'winner_boundary' | 'loser_boundary' | 'highest_tie' | 'lowest_tie';
+    tiedUserIds: string[];
+  };
 }
+
+export type TieBreakBody =
+  | { pick: 'include_all' }
+  | { pick: 'manual'; winners?: string[]; losers?: string[] };
 
 export interface CycleDetail extends CycleSummary {
   roomId: string;
@@ -141,17 +149,68 @@ export interface Paginated<T> {
   meta: { total: number; page: number; pageSize: number; totalPages: number };
 }
 
+export interface CheckIn {
+  id: string;
+  cycleId: string;
+  userId: string;
+  points: number;
+  note: string | null;
+  createdAt: string;
+  undoneAt: string | null;
+}
+
 export interface CheckInResult {
-  checkIn: {
-    id: string;
-    cycleId: string;
-    userId: string;
-    points: number;
-    note: string | null;
-    createdAt: string;
-    undoneAt: string | null;
-  };
+  checkIn: CheckIn;
   myPoints: number;
   target: number;
   percent: number;
+}
+
+export interface ActivityItem extends CheckIn {
+  user: UserSummary;
+}
+
+export type HistoryOutcome = 'won' | 'lost' | 'participated';
+
+export interface HistoryRecent {
+  cycleId: string;
+  roomId: string;
+  roomName: string;
+  cycleNumber: number;
+  endsAt: string;
+  outcome: HistoryOutcome;
+}
+
+export interface Badge {
+  code: string;
+  name: string;
+  icon: string;
+  earnedAt: string;
+}
+
+export interface MyHistory {
+  participations: number;
+  wins: number;
+  losses: number;
+  avgPercent: number;
+  recent: HistoryRecent[];
+  currentStreak: number;
+  bestStreak: number;
+  badges: Badge[];
+}
+
+export interface RoomTemplate {
+  code: string;
+  name: string;
+  icon: string;
+  description: string;
+  periodType: PeriodType;
+  customDays: number | null;
+  winnerRule: WinnerRule;
+  winnerN: number | null;
+  loserRule: LoserRule;
+  loserN: number | null;
+  capAtTarget: boolean;
+  suggestedTarget: number;
+  stake: string | null;
 }

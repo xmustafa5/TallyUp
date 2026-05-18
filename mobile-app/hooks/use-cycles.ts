@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cyclesService } from '@/services/cycles';
 import { queryKeys } from '@/constants/query-keys';
+import type { TieBreakBody } from '@/types/tallyup';
 
 /** Live leaderboard; refetches every 15s and on screen focus. */
 export function useCurrentCycle(roomId: string) {
@@ -55,5 +56,16 @@ export function useAdvanceCycle(roomId: string) {
       });
       qc.invalidateQueries({ queryKey: queryKeys.rooms.history(roomId) });
     },
+  });
+}
+
+/** Resolves a pending tie-break, then refetches the cycle detail. */
+export function useTieBreak(cycleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TieBreakBody) =>
+      cyclesService.tieBreak(cycleId, body),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: queryKeys.cycles.detail(cycleId) }),
   });
 }

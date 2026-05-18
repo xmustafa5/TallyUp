@@ -168,6 +168,20 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const [globalStreak, userBadges] = await Promise.all([
+        // Prisma types `roomId` as non-null in the compound unique even
+        // though the column is nullable -- use findFirst for the global
+        // (roomId = null) streak.
+        fastify.prisma.userStreak.findFirst({
+          where: { userId, roomId: null },
+        }),
+        fastify.prisma.userBadge.findMany({
+          where: { userId },
+          orderBy: { earnedAt: 'desc' },
+          include: { badge: true },
+        }),
+      ]);
+
       return reply.send({
         success: true,
         data: {
@@ -178,6 +192,14 @@ export default async function usersRoutes(fastify: FastifyInstance) {
             percentCount > 0
               ? Math.round(percentSum / percentCount)
               : 0,
+          currentStreak: globalStreak?.current ?? 0,
+          bestStreak: globalStreak?.best ?? 0,
+          badges: userBadges.map((ub) => ({
+            code: ub.badge.code,
+            name: ub.badge.name,
+            icon: ub.badge.icon,
+            earnedAt: ub.earnedAt.toISOString(),
+          })),
           recent,
         },
       });

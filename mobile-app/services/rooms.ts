@@ -1,15 +1,24 @@
 import api from './api';
-import type { RoomDetail, RoomListItem, RoomMember } from '@/types/tallyup';
+import type {
+  RoomDetail,
+  RoomListItem,
+  RoomMember,
+  PeriodType,
+  WinnerRule,
+  LoserRule,
+} from '@/types/tallyup';
 
 export interface CreateRoomInput {
   name: string;
   icon?: string | null;
   description?: string | null;
-  periodType: 'week' | 'month' | 'custom' | 'oneshot';
+  periodType: PeriodType;
   customDays?: number | null;
-  winnerRule?: string;
+  startDayOfWeek?: number | null;
+  startDayOfMonth?: number | null;
+  winnerRule?: WinnerRule;
   winnerN?: number | null;
-  loserRule?: string;
+  loserRule?: LoserRule;
   loserN?: number | null;
   capAtTarget?: boolean;
   stake?: string | null;

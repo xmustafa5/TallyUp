@@ -12,6 +12,8 @@ import {
 } from './cycle-lifecycle.service';
 import type { PeriodType } from './cycle-scheduler.service';
 import { notify } from '../../../notifications/domain/services/notification.service';
+import { applyStreaksAndBadges } from './streak-badge.service';
+import { BADGE_CATALOG } from './badge-catalog';
 
 interface StoredRuleSnapshot extends RuleSnapshot {
   periodType: PeriodType;
@@ -92,12 +94,27 @@ export async function processCycleEnd(
       data: { status: 'ended', resultJson: result as unknown as object },
     });
 
-    return { cycle, room, snapshot, result };
+    // Streaks + badges, in the same transaction (idempotent: the tx is
+    // guarded on cycle.status === 'active', so it runs once per cycle).
+    const winnerIds = new Set(result.winners.map((w) => w.userId));
+    const sb = await applyStreaksAndBadges(
+      tx,
+      cycle.id,
+      room.id,
+      scores.map((s) => ({
+        userId: s.userId,
+        points: s.points,
+        target: s.target,
+      })),
+      winnerIds,
+    );
+
+    return { cycle, room, snapshot, result, earnedByUser: sb.earnedByUser };
   });
 
   if (!prepared) return { processed: false };
 
-  const { cycle, room, snapshot, result } = prepared;
+  const { cycle, room, snapshot, result, earnedByUser } = prepared;
   const isRepeating = snapshot.periodType !== 'oneshot';
 
   // Create the next cycle (repeating) or archive the room (oneshot).
@@ -180,6 +197,27 @@ export async function processCycleEnd(
               : 'The cycle has ended. See the results.',
       },
     });
+  }
+
+  // Notify members who earned new badges this cycle.
+  const badgeName = new Map(BADGE_CATALOG.map((b) => [b.code, b.name]));
+  for (const [userId, codes] of earnedByUser) {
+    for (const code of codes) {
+      await notify(prisma, queue, {
+        userId,
+        type: 'badge_earned',
+        payload: {
+          roomId: room.id,
+          roomName: room.name,
+          cycleId: cycle.id,
+          badgeCode: code,
+        },
+        push: {
+          title: 'New badge!',
+          body: `You earned "${badgeName.get(code) ?? code}".`,
+        },
+      });
+    }
   }
 
   return { processed: true, result };

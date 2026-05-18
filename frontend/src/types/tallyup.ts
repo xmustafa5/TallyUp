@@ -95,6 +95,7 @@ export interface LeaderboardRow {
   points: number;
   target: number;
   percent: number;
+  streak: number;
 }
 
 export interface RuleParticipant {
@@ -136,9 +137,63 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface MyHistoryRecent {
+  cycleId: string;
+  roomId: string;
+  roomName: string;
+  cycleNumber: number;
+  endsAt: string;
+  outcome: 'won' | 'lost' | 'participated';
+}
+
+export interface Badge {
+  code: string;
+  name: string;
+  icon: string;
+  earnedAt: string;
+}
+
+export interface MyHistory {
+  participations: number;
+  wins: number;
+  losses: number;
+  avgPercent: number;
+  currentStreak: number;
+  bestStreak: number;
+  badges: Badge[];
+  recent: MyHistoryRecent[];
+}
+
+export interface RoomTemplate {
+  code: string;
+  name: string;
+  icon: string;
+  description: string;
+  periodType: PeriodType;
+  customDays: number | null;
+  winnerRule: WinnerRule;
+  winnerN: number | null;
+  loserRule: LoserRule;
+  loserN: number | null;
+  capAtTarget: boolean;
+  suggestedTarget: number;
+  stake: string | null;
+}
+
 export interface Paginated<T> {
   items: T[];
   meta: { total: number; page: number; pageSize: number; totalPages: number };
+}
+
+export interface CheckInActivity {
+  id: string;
+  cycleId: string;
+  userId: string;
+  points: number;
+  note: string | null;
+  createdAt: string;
+  undoneAt: string | null;
+  user: UserSummary;
 }
 
 export interface CheckInResult {

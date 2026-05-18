@@ -8,8 +8,14 @@ import { getQueryClient } from '@/lib/query-client';
 import { useAuth } from '@/hooks/use-auth';
 import { usePushRegistration } from '@/hooks/use-push-registration';
 import { useCheckinQueue } from '@/stores/checkin-queue';
+import { bootstrapLocale, useI18n } from '@/hooks/use-i18n';
 
 const queryClient = getQueryClient();
+
+// Apply the persisted locale (and I18nManager.forceRTL) before first render.
+// forceRTL fully applies on the next launch; per-component direction is
+// driven by `isRTL` from useI18n where it visibly matters.
+bootstrapLocale();
 
 /**
  * Redirects based on auth state and flushes the offline check-in queue
@@ -41,6 +47,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const { t } = useI18n();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -51,22 +58,26 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="rooms/[id]/index"
-                options={{ headerShown: true, title: 'Room' }}
+                options={{ headerShown: true, title: t('room.title') }}
               />
               <Stack.Screen
                 name="rooms/[id]/settings"
-                options={{ headerShown: true, title: 'Settings' }}
+                options={{ headerShown: true, title: t('settings.title') }}
               />
               <Stack.Screen
                 name="rooms/[id]/history"
-                options={{ headerShown: true, title: 'History' }}
+                options={{ headerShown: true, title: t('room.history') }}
+              />
+              <Stack.Screen
+                name="rooms/[id]/activity"
+                options={{ headerShown: true, title: t('room.activity') }}
               />
               <Stack.Screen
                 name="rooms/new"
                 options={{
                   presentation: 'modal',
                   headerShown: true,
-                  title: 'New room',
+                  title: t('createRoom.title'),
                 }}
               />
               <Stack.Screen
@@ -74,7 +85,7 @@ export default function RootLayout() {
                 options={{
                   presentation: 'modal',
                   headerShown: true,
-                  title: 'Results',
+                  title: t('results.headerTitle'),
                 }}
               />
             </Stack>

@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { colors } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function TabsLayout() {
   const t = colors.light;
+  const { t: tr } = useI18n();
 
   const tab = (active: IconName) =>
     function TabIcon({ color, size }: { color: string; size: number }) {
@@ -24,22 +26,28 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Rooms', tabBarIcon: tab('trophy-outline') }}
+        options={{ title: tr('nav.rooms'), tabBarIcon: tab('trophy-outline') }}
       />
       <Tabs.Screen
         name="activity"
-        options={{ title: 'Activity', tabBarIcon: tab('pulse-outline') }}
+        options={{
+          title: tr('nav.activity'),
+          tabBarIcon: tab('pulse-outline'),
+        }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
+          title: tr('nav.notifications'),
           tabBarIcon: tab('notifications-outline'),
         }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: tab('person-outline') }}
+        options={{
+          title: tr('nav.profile'),
+          tabBarIcon: tab('person-outline'),
+        }}
       />
     </Tabs>
   );
