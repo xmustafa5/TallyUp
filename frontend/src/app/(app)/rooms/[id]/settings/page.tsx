@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, Loader2, Archive } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRoomQuery, usePatchMember, useRoomLifecycle } from '@/hooks/use-rooms';
 import { useSendInvitation } from '@/hooks/use-invitations';
 import { roomsService } from '@/services/rooms';
@@ -27,6 +28,7 @@ export default function RoomSettingsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations('settings');
   const router = useRouter();
   const { toast } = useToast();
   const { data: room, isLoading, refetch } = useRoomQuery(id);
@@ -47,9 +49,9 @@ export default function RoomSettingsPage({
   if (room.myRole !== 'admin') {
     return (
       <div className="p-6">
-        <PageHeader title="Settings" />
+        <PageHeader title={t('title')} />
         <p className="p-6 text-sm text-muted-foreground">
-          Only the room admin can manage settings.
+          {t('onlyAdmin')}
         </p>
       </div>
     );
@@ -59,25 +61,26 @@ export default function RoomSettingsPage({
     if (!publicId.trim()) return;
     sendInvite.mutate(publicId.trim().toUpperCase(), {
       onSuccess: () => {
-        toast({ type: 'success', message: 'Invitation sent' });
+        toast({ type: 'success', message: t('invitationSent') });
         setPublicId('');
       },
-      onError: (e) => toast({ type: 'error', message: errMsg(e, 'Invite failed') }),
+      onError: (e) =>
+        toast({ type: 'error', message: errMsg(e, t('inviteFailed')) }),
     });
   }
 
   function saveTarget(userId: string) {
     const val = Number(targets[userId]);
     if (!Number.isInteger(val) || val < 1) {
-      toast({ type: 'error', message: 'Target must be a positive integer' });
+      toast({ type: 'error', message: t('targetPositive') });
       return;
     }
     patchMember.mutate(
       { userId, body: { target: val } },
       {
-        onSuccess: () => toast({ type: 'success', message: 'Target updated' }),
+        onSuccess: () => toast({ type: 'success', message: t('targetUpdated') }),
         onError: (e) =>
-          toast({ type: 'error', message: errMsg(e, 'Update failed') }),
+          toast({ type: 'error', message: errMsg(e, t('updateFailed')) }),
       },
     );
   }
@@ -85,10 +88,10 @@ export default function RoomSettingsPage({
   async function transfer(userId: string) {
     try {
       await roomsService.transferAdmin(id, userId);
-      toast({ type: 'success', message: 'Admin transferred' });
+      toast({ type: 'success', message: t('adminTransferred') });
       refetch();
     } catch (e) {
-      toast({ type: 'error', message: errMsg(e, 'Transfer failed') });
+      toast({ type: 'error', message: errMsg(e, t('transferFailed')) });
     }
   }
 
@@ -96,15 +99,20 @@ export default function RoomSettingsPage({
 
   return (
     <div>
-      <PageHeader title={`${room.icon ?? '🎯'} ${room.name} — Settings`} />
+      <PageHeader
+        title={t('roomSettingsTitle', {
+          icon: room.icon ?? '🎯',
+          name: room.name,
+        })}
+      />
       <div className="mx-auto max-w-2xl space-y-6 p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Invite a member</CardTitle>
+            <CardTitle>{t('inviteMember')}</CardTitle>
           </CardHeader>
           <CardContent className="flex items-end gap-2">
             <div className="flex-1">
-              <Label htmlFor="publicId">User ID</Label>
+              <Label htmlFor="publicId">{t('userId')}</Label>
               <Input
                 id="publicId"
                 placeholder="ALI-2941"
@@ -114,19 +122,19 @@ export default function RoomSettingsPage({
             </div>
             <Button onClick={invite} disabled={sendInvite.isPending}>
               <Loader2
-                className={`mr-2 size-4 animate-spin ${sendInvite.isPending ? '' : 'hidden'}`}
+                className={`me-2 size-4 animate-spin ${sendInvite.isPending ? '' : 'hidden'}`}
               />
               <UserPlus
-                className={`mr-1.5 size-4 ${sendInvite.isPending ? 'hidden' : ''}`}
+                className={`me-1.5 size-4 ${sendInvite.isPending ? 'hidden' : ''}`}
               />
-              Invite
+              {t('invite')}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Members & targets</CardTitle>
+            <CardTitle>{t('membersAndTargets')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {activeMembers.map((m) => (
@@ -138,14 +146,14 @@ export default function RoomSettingsPage({
                   <p className="truncate text-sm font-medium">
                     {m.user.displayName}
                     {m.role === 'admin' && (
-                      <span className="ml-1.5 text-xs text-muted-foreground">
-                        (admin)
+                      <span className="ms-1.5 text-xs text-muted-foreground">
+                        {t('adminTag')}
                       </span>
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {m.user.publicId}
-                    {m.joinedLate && ' · joined late'}
+                    {m.joinedLate && ` · ${t('joinedLate')}`}
                   </p>
                 </div>
                 <Input
@@ -163,7 +171,7 @@ export default function RoomSettingsPage({
                   onClick={() => saveTarget(m.user.id)}
                   disabled={patchMember.isPending}
                 >
-                  Save
+                  {t('save')}
                 </Button>
                 {m.role !== 'admin' && (
                   <Button
@@ -171,7 +179,7 @@ export default function RoomSettingsPage({
                     variant="ghost"
                     onClick={() => transfer(m.user.id)}
                   >
-                    Make admin
+                    {t('makeAdmin')}
                   </Button>
                 )}
               </div>
@@ -181,7 +189,7 @@ export default function RoomSettingsPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Danger zone</CardTitle>
+            <CardTitle>{t('dangerZone')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Button
@@ -190,15 +198,15 @@ export default function RoomSettingsPage({
               onClick={() =>
                 archive.mutate(id, {
                   onSuccess: () => {
-                    toast({ type: 'success', message: 'Room archived' });
+                    toast({ type: 'success', message: t('roomArchived') });
                     router.push('/');
                   },
                 })
               }
               disabled={archive.isPending}
             >
-              <Archive className="mr-1.5 size-4" />
-              Archive room
+              <Archive className="me-1.5 size-4" />
+              {t('archiveRoom')}
             </Button>
           </CardContent>
         </Card>

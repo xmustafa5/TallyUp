@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useCreateRoom } from '@/hooks/use-rooms';
 import { useToast } from '@/components/shared/toast';
 import { PageHeader } from '@/components/shared/page-header';
@@ -15,11 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const schema = z
   .object({
-    name: z.string().min(1, 'Name is required').max(80),
+    name: z.string().min(1, 'errorNameRequired').max(80),
     icon: z.string().max(8).optional(),
     description: z.string().max(500).optional(),
     periodType: z.enum(['week', 'month', 'custom', 'oneshot']),
     customDays: z.coerce.number().int().min(1).max(365).optional(),
+    startDayOfWeek: z.string().optional(),
+    startDayOfMonth: z.coerce.number().int().min(1).max(28).optional(),
     winnerRule: z.enum(['none', 'highest', 'lowest', 'top_n', 'threshold']),
     loserRule: z.enum(['none', 'lowest', 'highest', 'bottom_n', 'threshold']),
     winnerN: z.coerce.number().int().min(1).optional(),
@@ -30,7 +33,7 @@ const schema = z
   .refine(
     (v) =>
       !(['custom', 'oneshot'].includes(v.periodType) && !v.customDays),
-    { message: 'Enter the number of days', path: ['customDays'] },
+    { message: 'enterNumberOfDays', path: ['customDays'] },
   );
 
 type FormValues = z.infer<typeof schema>;
@@ -39,6 +42,7 @@ const selectCls =
   'h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
 export default function CreateRoomPage() {
+  const t = useTranslations('createRoom');
   const router = useRouter();
   const { toast } = useToast();
   const createRoom = useCreateRoom();
@@ -71,6 +75,14 @@ export default function CreateRoomPage() {
         customDays: ['custom', 'oneshot'].includes(values.periodType)
           ? values.customDays
           : null,
+        startDayOfWeek:
+          values.periodType === 'week' && values.startDayOfWeek
+            ? Number(values.startDayOfWeek)
+            : null,
+        startDayOfMonth:
+          values.periodType === 'month' && values.startDayOfMonth
+            ? values.startDayOfMonth
+            : null,
         winnerRule: values.winnerRule,
         winnerN: values.winnerRule === 'top_n' ? values.winnerN : null,
         loserRule: values.loserRule,
@@ -80,7 +92,7 @@ export default function CreateRoomPage() {
       },
       {
         onSuccess: (room) => {
-          toast({ type: 'success', message: 'Room created' });
+          toast({ type: 'success', message: t('roomCreated') });
           router.push(`/rooms/${room.id}/settings`);
         },
         onError: (e: unknown) =>
@@ -88,7 +100,7 @@ export default function CreateRoomPage() {
             type: 'error',
             message:
               (e as { response?: { data?: { message?: string } } })?.response
-                ?.data?.message ?? 'Could not create room',
+                ?.data?.message ?? t('couldNotCreate'),
           }),
       },
     );
@@ -96,47 +108,44 @@ export default function CreateRoomPage() {
 
   return (
     <div>
-      <PageHeader
-        title="New room"
-        description="Set up the challenge. Invite friends and set targets next."
-      />
+      <PageHeader title={t('title')} description={t('subtitle')} />
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="mx-auto max-w-2xl space-y-6 p-6"
       >
         <Card>
           <CardHeader>
-            <CardTitle>Basics</CardTitle>
+            <CardTitle>{t('basics')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-3">
               <div className="w-20">
-                <Label htmlFor="icon">Icon</Label>
+                <Label htmlFor="icon">{t('icon')}</Label>
                 <Input id="icon" placeholder="🏋️" {...register('icon')} />
               </div>
               <div className="flex-1">
-                <Label htmlFor="name">Room name</Label>
+                <Label htmlFor="name">{t('roomName')}</Label>
                 <Input
                   id="name"
-                  placeholder="Gym Challenge"
+                  placeholder={t('roomNamePlaceholder')}
                   {...register('name')}
                 />
                 {errors.name && (
                   <p className="mt-1 text-xs text-destructive">
-                    {errors.name.message}
+                    {t(errors.name.message as 'errorNameRequired')}
                   </p>
                 )}
               </div>
             </div>
             <div>
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description">{t('description')}</Label>
               <Input id="description" {...register('description')} />
             </div>
             <div>
-              <Label htmlFor="stake">Stake (optional, just for fun)</Label>
+              <Label htmlFor="stake">{t('stake')}</Label>
               <Input
                 id="stake"
-                placeholder="Loser buys dinner"
+                placeholder={t('stakePlaceholder')}
                 {...register('stake')}
               />
             </div>
@@ -145,25 +154,25 @@ export default function CreateRoomPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Period</CardTitle>
+            <CardTitle>{t('period')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="periodType">How long is each cycle?</Label>
+              <Label htmlFor="periodType">{t('cycleLength')}</Label>
               <select
                 id="periodType"
                 className={selectCls}
                 {...register('periodType')}
               >
-                <option value="week">Weekly (7 days)</option>
-                <option value="month">Monthly</option>
-                <option value="custom">Custom number of days</option>
-                <option value="oneshot">One-shot (no repeat)</option>
+                <option value="week">{t('periodWeek')}</option>
+                <option value="month">{t('periodMonth')}</option>
+                <option value="custom">{t('periodCustom')}</option>
+                <option value="oneshot">{t('periodOneshot')}</option>
               </select>
             </div>
             {['custom', 'oneshot'].includes(periodType) && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="customDays">Number of days</Label>
+                <Label htmlFor="customDays">{t('numberOfDays')}</Label>
                 <Input
                   id="customDays"
                   type="number"
@@ -173,7 +182,46 @@ export default function CreateRoomPage() {
                 />
                 {errors.customDays && (
                   <p className="text-xs text-destructive">
-                    {errors.customDays.message}
+                    {t(errors.customDays.message as 'enterNumberOfDays')}
+                  </p>
+                )}
+              </div>
+            )}
+            {periodType === 'week' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="startDayOfWeek">{t('startDayOfWeek')}</Label>
+                <select
+                  id="startDayOfWeek"
+                  className={selectCls}
+                  {...register('startDayOfWeek')}
+                >
+                  <option value="">{t('startDayDefault')}</option>
+                  <option value="0">{t('sunday')}</option>
+                  <option value="1">{t('monday')}</option>
+                  <option value="2">{t('tuesday')}</option>
+                  <option value="3">{t('wednesday')}</option>
+                  <option value="4">{t('thursday')}</option>
+                  <option value="5">{t('friday')}</option>
+                  <option value="6">{t('saturday')}</option>
+                </select>
+              </div>
+            )}
+            {periodType === 'month' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="startDayOfMonth">
+                  {t('startDayOfMonth')}
+                </Label>
+                <Input
+                  id="startDayOfMonth"
+                  type="number"
+                  min={1}
+                  max={28}
+                  placeholder={t('startDayOfMonthPlaceholder')}
+                  {...register('startDayOfMonth')}
+                />
+                {errors.startDayOfMonth && (
+                  <p className="text-xs text-destructive">
+                    {errors.startDayOfMonth.message}
                   </p>
                 )}
               </div>
@@ -183,26 +231,26 @@ export default function CreateRoomPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Rules</CardTitle>
+            <CardTitle>{t('rules')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="winnerRule">Winner rule</Label>
+              <Label htmlFor="winnerRule">{t('winnerRule')}</Label>
               <select
                 id="winnerRule"
                 className={selectCls}
                 {...register('winnerRule')}
               >
-                <option value="none">No winner</option>
-                <option value="highest">Highest points wins</option>
-                <option value="lowest">Lowest points wins</option>
-                <option value="top_n">Top N win</option>
-                <option value="threshold">Everyone above target wins</option>
+                <option value="none">{t('winnerNone')}</option>
+                <option value="highest">{t('winnerHighest')}</option>
+                <option value="lowest">{t('winnerLowest')}</option>
+                <option value="top_n">{t('winnerTopN')}</option>
+                <option value="threshold">{t('winnerThreshold')}</option>
               </select>
             </div>
             {winnerRule === 'top_n' && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="winnerN">How many winners (N)?</Label>
+                <Label htmlFor="winnerN">{t('howManyWinners')}</Label>
                 <Input
                   id="winnerN"
                   type="number"
@@ -212,22 +260,22 @@ export default function CreateRoomPage() {
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="loserRule">Loser rule</Label>
+              <Label htmlFor="loserRule">{t('loserRule')}</Label>
               <select
                 id="loserRule"
                 className={selectCls}
                 {...register('loserRule')}
               >
-                <option value="none">No loser</option>
-                <option value="lowest">Lowest points loses</option>
-                <option value="highest">Highest points loses</option>
-                <option value="bottom_n">Bottom N lose</option>
-                <option value="threshold">Everyone below target loses</option>
+                <option value="none">{t('loserNone')}</option>
+                <option value="lowest">{t('loserLowest')}</option>
+                <option value="highest">{t('loserHighest')}</option>
+                <option value="bottom_n">{t('loserBottomN')}</option>
+                <option value="threshold">{t('loserThreshold')}</option>
               </select>
             </div>
             {loserRule === 'bottom_n' && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="loserN">How many losers (N)?</Label>
+                <Label htmlFor="loserN">{t('howManyLosers')}</Label>
                 <Input
                   id="loserN"
                   type="number"
@@ -242,7 +290,7 @@ export default function CreateRoomPage() {
                 className="size-4"
                 {...register('capAtTarget')}
               />
-              Cap check-ins at each member&apos;s target
+              {t('capAtTarget')}
             </label>
           </CardContent>
         </Card>
@@ -253,13 +301,13 @@ export default function CreateRoomPage() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Cancel
+            {t('cancel')}
           </Button>
           <Button type="submit" disabled={createRoom.isPending}>
             <Loader2
-              className={`mr-2 size-4 animate-spin ${createRoom.isPending ? '' : 'hidden'}`}
+              className={`me-2 size-4 animate-spin ${createRoom.isPending ? '' : 'hidden'}`}
             />
-            Create room
+            {t('create')}
           </Button>
         </div>
       </form>

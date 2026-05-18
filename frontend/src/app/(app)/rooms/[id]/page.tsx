@@ -2,7 +2,8 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { Settings, Play, Pause, Trophy, History } from 'lucide-react';
+import { Settings, Play, Pause, Trophy, History, Activity } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRoomQuery, useStartRoom, useRoomLifecycle } from '@/hooks/use-rooms';
 import { useCurrentCycle, useAdvanceCycle } from '@/hooks/use-cycles';
 import { useAuth } from '@/hooks/use-auth';
@@ -23,6 +24,7 @@ export default function RoomOverviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations('room');
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: room, isLoading } = useRoomQuery(id);
@@ -42,6 +44,10 @@ export default function RoomOverviewPage({
   const isAdmin = room.myRole === 'admin';
   const me = cycle?.leaderboard.find((r) => r.userId === user?.id);
   const isDev = process.env.NODE_ENV !== 'production';
+  const statusKey = `status${
+    room.status.charAt(0).toUpperCase() + room.status.slice(1)
+  }` as 'statusDraft' | 'statusActive' | 'statusPaused' | 'statusArchived';
+  const statusLabel = t(statusKey);
 
   return (
     <div>
@@ -56,10 +62,18 @@ export default function RoomOverviewPage({
             <Button
               variant="outline"
               size="sm"
+              render={<Link href={`/rooms/${id}/activity`} />}
+            >
+              <Activity className="me-1.5 size-4" />
+              {t('activity')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               render={<Link href={`/rooms/${id}/history`} />}
             >
-              <History className="mr-1.5 size-4" />
-              History
+              <History className="me-1.5 size-4" />
+              {t('history')}
             </Button>
             {isAdmin && (
               <Button
@@ -67,8 +81,8 @@ export default function RoomOverviewPage({
                 size="sm"
                 render={<Link href={`/rooms/${id}/settings`} />}
               >
-                <Settings className="mr-1.5 size-4" />
-                Settings
+                <Settings className="me-1.5 size-4" />
+                {t('settings')}
               </Button>
             )}
           </div>
@@ -79,11 +93,11 @@ export default function RoomOverviewPage({
         {/* Status / lifecycle */}
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant={room.status === 'active' ? 'default' : 'secondary'}>
-            {room.status}
+            {statusLabel}
           </Badge>
           {room.stake && (
             <span className="text-sm text-muted-foreground">
-              Stake: {room.stake}
+              {t('stake', { stake: room.stake })}
             </span>
           )}
           {isAdmin && room.status === 'draft' && (
@@ -96,14 +110,14 @@ export default function RoomOverviewPage({
                       type: 'error',
                       message:
                         (e as { response?: { data?: { message?: string } } })
-                          ?.response?.data?.message ?? 'Could not start',
+                          ?.response?.data?.message ?? t('couldNotStart'),
                     }),
                 })
               }
               disabled={startRoom.isPending}
             >
-              <Play className="mr-1.5 size-4" />
-              Start challenge
+              <Play className="me-1.5 size-4" />
+              {t('startChallenge')}
             </Button>
           )}
           {isAdmin && room.status === 'active' && (
@@ -113,8 +127,8 @@ export default function RoomOverviewPage({
               onClick={() => pause.mutate(id)}
               disabled={pause.isPending}
             >
-              <Pause className="mr-1.5 size-4" />
-              Pause
+              <Pause className="me-1.5 size-4" />
+              {t('pause')}
             </Button>
           )}
           {isAdmin && room.status === 'paused' && (
@@ -123,8 +137,8 @@ export default function RoomOverviewPage({
               onClick={() => resume.mutate(id)}
               disabled={resume.isPending}
             >
-              <Play className="mr-1.5 size-4" />
-              Resume
+              <Play className="me-1.5 size-4" />
+              {t('resume')}
             </Button>
           )}
           {isAdmin && isDev && cycle && room.status === 'active' && (
@@ -134,12 +148,12 @@ export default function RoomOverviewPage({
               onClick={() =>
                 advance.mutate(cycle.id, {
                   onSuccess: () =>
-                    toast({ type: 'success', message: 'Cycle advanced' }),
+                    toast({ type: 'success', message: t('cycleAdvanced') }),
                 })
               }
               disabled={advance.isPending}
             >
-              ⏩ End cycle now (dev)
+              ⏩ {t('endCycleDev')}
             </Button>
           )}
         </div>
@@ -148,7 +162,7 @@ export default function RoomOverviewPage({
         {cycle && me && (
           <Card>
             <CardHeader>
-              <CardTitle>Your progress</CardTitle>
+              <CardTitle>{t('yourProgress')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end justify-between">
@@ -161,7 +175,7 @@ export default function RoomOverviewPage({
                     </span>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {me.percent}% of your target
+                    {t('ofYourTarget', { percent: me.percent })}
                   </p>
                 </div>
               </div>
@@ -173,7 +187,7 @@ export default function RoomOverviewPage({
               />
               {room.status !== 'active' && (
                 <p className="text-xs text-muted-foreground">
-                  Check-ins are disabled while the room is {room.status}.
+                  {t('checkinsDisabled', { status: statusLabel })}
                 </p>
               )}
             </CardContent>
@@ -185,7 +199,7 @@ export default function RoomOverviewPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="size-4 text-amber-500" />
-              Leaderboard
+              {t('leaderboard')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -197,8 +211,8 @@ export default function RoomOverviewPage({
             ) : (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 {room.status === 'draft'
-                  ? 'Start the challenge to see the leaderboard.'
-                  : 'No active cycle.'}
+                  ? t('startToSeeLeaderboard')
+                  : t('noActiveCycle')}
               </p>
             )}
           </CardContent>
